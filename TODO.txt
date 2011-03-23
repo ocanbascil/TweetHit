@@ -2,6 +2,5 @@
 - parser should be fixed for /<asin_prefix>/some-string/<asin>
 - prettify product renderer build method
 - add decorators to taskworkers for retry & defer
-- add affiliate linking registration (form & info)
 - use different languages for different locale views
-
+- merge url & payload models
