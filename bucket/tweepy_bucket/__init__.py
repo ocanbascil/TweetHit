@@ -1,0 +1,1 @@
+from tweepy_bucket.models import SimpleStatus

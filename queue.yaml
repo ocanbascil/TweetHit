@@ -1,0 +1,17 @@
+queue:
+- name: url
+  rate: 5/s
+  bucket_size: 10
+  
+- name: fastqueue
+  rate: 20/s
+  bucket_size: 40
+
+- name: cleanup
+  rate: 1/s
+  bucket_size: 10
+  
+- name: productinfo
+  rate: 20/m
+  bucket_size: 1
+  max_concurrent_requests: 1

@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>Banned Models</title>
+  </head>
+
+  <body>
+  	<div>
+
+	<div>
+	<form id='sampleform' method='post' action='' >
+	   <p>
+	   	<textarea rows="15" cols="50" name='users'>
+		</textarea>
+	   </p>
+	   <p>
+	   <input type='submit' name='Submit' value='Submit' />
+	   </p>
+	</form>
+
+	{% for user in users %}
+		 {{user.key().name()}} <br>
+	{% endfor %}
+  </body>
+</html>
+

@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>AmazonTweets: The Most Popular Products Daily</title>
+	<link rel="stylesheet" href="/stylesheets/style.css" type="text/css" />
+	<link rel="icon" type="image/png" href="/favicon.ico" />
+	<script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#username=amazontweets"></script>
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-21051365-1']);
+	  _gaq.push(['_trackPageview']);
+	
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	
+	</script>
+</head>
+
+<body>
+		<!-- AddThis Fixed-Positioned Toolbox -->
+		<div class="addthis_toolbox atfixed">   
+			<div class="custom_images">
+				<a class="addthis_button_facebook"><img src="http://www.addthis.com/cms-content/images/gallery/facebook32.png" alt="Share to Facebook" /></a>
+				<a class="addthis_button_twitter"><img src="http://www.addthis.com/cms-content/images/gallery/twitter32.png"  alt="Share to Twitter" /></a>
+				<a class="addthis_button_stumbleupon"><img src="http://www.addthis.com/cms-content/images/gallery/stumbleupon32.png" alt="Stumble It" /></a>
+				<a class="addthis_button_more"><img src="http://www.addthis.com/cms-content/images/gallery/addthis32.png" alt="More..." /></a>
+			</div>
+		</div>
+		
+		<div class = "navigation_buttons">
+			<a href="{{ prev_href}}" class = 'prev_day_button' ><img src="/images/left_arrow.png" align="right" border="0" ></a>
+			{% if not today_flag %} 
+			<a href="{{ next_href}}" class = 'next_day_button'><img src="/images/right_arrow.png" align="right" border="0" ></a>
+			{% endif %}
+		</div>
+		<!-- AddThis Button END -->
+		<div id="wrapper">
+	
+		<div id="header">
+		
+			<h1><a href="#">AmazonTweets</a></h1>
+		
+		</div>
+		<div id = "content" align="center">
+		{% if today_flag %} 
+		Displaying the most tweeted products for today. <br/>
+		This list is updated every 10 minutes.
+		{% else %}
+		Displaying the most tweeted products for {{date.day}}-{{date.month}}-{{date.year}}		
+		{% endif %}
+		</div>
+		<div align="center">
+		<table width = "100%" >
+		  <thead>
+			<tr>
+			  <th>Tweets</th>
+			  <th COLSPAN=2>Product</th>
+			  <th >Price</th>
+			</tr>
+		  </thead>
+			{% for item in products %}
+			<tr>
+				<td WIDTH="10%" class="tweet" align="center">{{ item.count}}</td>
+				<td WIDTH="10%"><img src="{{item.image_small}}" width="60" height="60"/></td>
+				<td><a href="{{ item.url}}/{{ assoc_id}}">{{ item.title}}</a></td>
+				<td WIDTH="10%" align="right">{% if item.price is none %}N/A{% else %}{{ item.price}}{% endif %}</td>
+			</tr>
+			{% endfor %}
+		</table>
+		</div>
+		<div id="footer"><br />
+		</div>
+	
+	</div>
+
+</body>
+</html>

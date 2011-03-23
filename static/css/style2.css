@@ -1,0 +1,412 @@
+/**** Base styles ****/
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: 20px;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.7em;
+  background: #1F1E1D;
+  color: #000;
+}
+
+h1, h2,.element {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+a,
+a code {
+  color: #333;
+  text-decoration: none;
+}
+
+a:hover,
+a:hover code { 
+  color: #FB4; 
+}
+
+a:active,
+a:active code {
+  color: #1FB;
+  background: black;
+}
+
+
+/**** Isotope styles ****/
+
+/* required for containers to inherit vertical size from window */
+html,
+body {
+  height: 100%;
+}
+
+.roundrect {
+	-khtml-border-radius:1.2em;
+	-webkit-border-radius: 1.2em;
+	-moz-border-radius: 1.2em;
+	border-radius: 1.2em;
+}
+
+.gradient {
+  background-color: #fff;
+  background-image: -moz-linear-gradient(-90deg, 
+    hsla( 0, 0%, 100%, 0.5 ) , 
+    hsla( 0, 0%, 80%, 0.5 ) 
+  );
+  background-image: -webkit-gradient(linear, 0 top, 0 bottom, 
+    from( hsla( 0, 0%, 100%, 0.5 ) ), 
+    to(   hsla( 0, 0%, 85%, 0.5 ) )
+  );
+}
+
+/* Locale Buttons */
+/* Rankings */
+#locale_container ul
+{
+	position:absolute;
+    top: 10%;
+    left: 50%;
+	list-style-type: none;
+}
+
+#locale_container ul li{
+    display: inline;}
+ 
+#locale_container ul li a{
+    float: left; 
+	text-decoration: none;
+	background-color: transparent;
+    padding: 0px 5px;
+}
+
+#locale_container  a img { border: 0; margin: 0 0 1px; opacity: 1.0; }
+#locale_container  a:hover img { margin: 1px 0 0; opacity: 0.75; }
+
+.prev_button{
+    position: fixed;
+    top: 75%;
+    left: 50%;
+    margin-left: -480px;
+}
+
+.next_button{
+    position: fixed;
+    top: 75%;
+    left: 50%;
+    margin-left: 360px;
+}
+
+.navigation_buttons a img { border: 0; margin: 0 0 1px; opacity: 1.0; }
+.navigation_buttons a:hover img { margin: 1px 0 0; opacity: 0.75; }
+
+/* Fixed Positioned AddThis Toolbox */            
+.addthis_toolbox.atfixed {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+	margin-left: -400px;
+    border: 1px solid #eee;
+    padding: 5px 5px 1px;
+    width: 32px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+}
+.addthis_toolbox .custom_images a {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+.addthis_toolbox .custom_images a img { border: 0; margin: 0 0 1px; opacity: 1.0; }
+.addthis_toolbox .custom_images a:hover img { margin: 1px 0 0; opacity: 0.75; }	
+
+#header{
+	height:100px;
+	width: 700px;
+	margin:0 auto;
+	background-image:url(/images/bg-header.gif);
+	background-repeat:no-repeat;
+}
+
+#header h1 a{
+	color: #FFF;
+	line-height:115px;
+	padding-left: 16px;
+	font-size:45px;
+	letter-spacing:-1px;
+}
+
+#header h1 a:hover{
+  text-shadow: 1px 1px 2px #FFF;
+}
+
+#wrapper {
+	width:700px;
+	margin:0 auto;
+	background: #ddd;
+	-khtml-border-radius:0  0 1.2em 1.2em;
+	border-radius:0  0 1.2em 1.2em;
+	-moz-border-radius:0  0 1.2em 1.2em;
+	-webkit-border-radius:0  0 1.2em 1.2em;
+
+}
+	
+#container {
+  padding: 5px;
+  margin-bottom: 20px;
+  width : 700px;
+}
+
+/**** Example Options ****/
+
+#options {
+  padding-left : 1.2em;
+  padding-bottom: 1.0em;
+}
+
+#options ul {
+  list-style: none;
+}
+
+#options li a {
+  display: block;
+  padding: 0.4em;
+  color: #222;
+  font-weight: bold;
+  text-shadow: 0 1px hsla( 0, 0%, 100%, 0.5 );
+}
+
+#options li a:hover {
+  background-color: #5BF;
+  	background-image: -moz-linear-gradient(-90deg, 
+	  hsla( 0, 0%, 100%, 1.0 ) , 
+	  hsla( 0, 0%, 100%, 0.5 ) 
+	);
+	background-image: -webkit-gradient(linear, 0 top, 0 bottom, 
+	  from( hsla(0, 0%, 100%, 1.0 ) ), 
+	  to(   hsla(0, 0%, 100%, 0.5 ) )
+	);
+}
+
+#options li a:active {
+  background-color: #39D;
+  -webkit-box-shadow: inset 0 2px 8px hsla( 0, 0%, 0%, 0.6 );
+     -moz-box-shadow: inset 0 2px 8px hsla( 0, 0%, 0%, 0.6 );
+       -o-box-shadow: inset 0 2px 8px hsla( 0, 0%, 0%, 0.6 );
+          box-shadow: inset 0 2px 8px hsla( 0, 0%, 0%, 0.6 );
+}
+
+#options .floated li {
+  float: left;
+  width: 33%;
+  text-align: center;
+}
+
+#options .floated li a {
+  padding:8px;
+  border-left:  1px solid hsla( 0, 0%, 100%, 0.3 );
+  border-right: 1px solid hsla( 0, 0%,   0%, 0.2 );
+}
+
+#options .floated li:first-child a {
+	-khtml-border-radius:1.2em 0 0 1.2em;
+	border-radius:1.2em 0 0 1.2em;
+	-moz-border-radius:1.2em 0 0 1.2em;
+	-webkit-border-radius:1.2em 0 0 1.2em;
+}
+
+#options .floated li:last-child a {
+	-khtml-border-radius:0 1.2em 1.2em 0;
+	border-radius:0 1.2em 1.2em 0;
+	-moz-border-radius:0 1.2em 1.2em 0;
+	-webkit-border-radius:0 1.2em 1.2em 0;
+}
+
+#dropdown1 {
+	position:relative;
+	z-index:3;
+}
+
+#navcontainer {
+	width: 350px;
+}
+
+#options .dropdown {
+	width:300px;
+	font-weight: bold;
+	cursor:pointer;
+	position:absolute;
+}
+
+#options .drop ul li {
+	display:none;
+}
+
+#options  .drop li:last-child a {
+	-khtml-border-radius:0 0 1.2em 1.2em;
+	border-radius:0 0 1.2em 1.2em;
+	-moz-border-radius:0 0 1.2em 1.2em;
+	-webkit-border-radius:0 0 1.2em 1.2em;
+}
+
+#options .dropselected {
+	padding:8px;
+	color:#222;
+	text-shadow: 0 1px hsla( 0, 0%, 100%, 0.5 );
+}
+
+#summary
+{
+	padding: 15px;
+	margin: 0px 20px 10px;
+}
+
+#summary p{
+	margin: 20px;
+	font-size: 16px;
+	font-weight: bold;
+	text-align: center;
+}
+
+#columns ul{
+  list-style: none;
+  font-size: 16px;
+  margin: 0;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+#columns li{
+  text-align:center;
+  float: left;
+  width: 33%;
+}
+
+#columns li:first-child {
+  text-align:left;
+}
+
+#columns li:last-child {
+  text-align:right;
+}
+
+.element {
+  width: 660px;
+  height: 90px;
+  margin-left: 17px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  position: relative;
+  color: #333;
+}
+
+.element * {
+  position: absolute;
+  margin: 0;
+}
+
+.element .image {
+  left: 12%;
+  top: 15%;
+}
+
+.element .title {
+  left: 23%;
+  top: 38%;
+  width: 63%;
+  font-size: 1.6em;
+}
+
+.element .tweets {
+  left: 2%;
+  top: 40%;
+  font-size: 2.3em;
+}
+
+.element .price {
+  right: 2%;
+  top: 40%;
+  font-size: 1.2em;
+}
+
+.clickable .element:hover {
+  cursor: pointer;
+  background-color: #5BF;
+	background-image: -moz-linear-gradient(-90deg, 
+	  hsla( 0, 0%, 100%, 1.0 ) , 
+	  hsla( 0, 0%, 100%, 0.5 ) 
+	);
+	background-image: -webkit-gradient(linear, 0 top, 0 bottom, 
+	  from( hsla(0, 0%, 100%, 1.0 ) ), 
+	  to(   hsla(0, 0%, 100%, 0.5 ) )
+	);
+}
+
+
+/**** Isotope Filtering ****/
+
+.isotope-item {
+  z-index: 2;
+}
+
+.isotope-hidden.isotope-item {
+  pointer-events: none;
+  z-index: 1;
+}
+
+/**** Isotope CSS3 transitions ****/
+
+.isotope,
+.isotope .isotope-item {
+  -webkit-transition-duration: 0.8s;
+     -moz-transition-duration: 0.8s;
+/*     -o-transition-duration: 0.8s;*/
+          transition-duration: 0.8s;
+
+}
+
+.isotope {
+  -webkit-transition-property: height, width;
+     -moz-transition-property: height, width;
+/*     -o-transition-property: height, width;*/
+          transition-property: height, width;
+}
+
+/* disable CSS transitions for containers with infinite scrolling*/
+.isotope.infinite-scrolling {
+  -webkit-transition: none;
+     -moz-transition: none;
+       -o-transition: none;
+          transition: none;
+}
+
+.isotope .isotope-item {
+  -webkit-transition-property: -webkit-transform, opacity;
+     -moz-transition-property:    -moz-transform, opacity;
+/*     -o-transition-property:      -o-transform, opacity;*/
+          transition-property:         transform, opacity;
+}
+
+.isotope.no-transition,
+.isotope.no-transition .isotope-item {
+  -webkit-transition-duration: 0s;
+     -moz-transition-duration: 0s;
+/*     -o-transition-duration: 0s;*/
+          transition-duration: 0s;
+}
+
+
+
+/* >> The Magnificent CLEARFIX: Updated to prevent margin-collapsing on child elements << j.mp/bestclearfix */
+.clearfix:before, .clearfix:after { content: "\0020"; display: block; height: 0; visibility: hidden; }
+.clearfix:after { clear: both; }
+/* fix clearfix: blueprintcss.lighthouseapp.com/projects/15318/tickets/5-extra-margin-padding-bottom-of-page */
+.clearfix { zoom: 1; }
+
+

@@ -1,0 +1,11 @@
+{% extends "base_template.html" %}
+{% block content %}
+	{% if current_period_flag %} 
+	Displaying the most tweeted products for today. <br/>
+	This list is updated every 10 minutes.
+	{% else %}
+	Displaying the most tweeted products for {{date.day}}-{{date.month}}-{{date.year}}
+	{% endif %}
+{% endblock %}
+{% block prev_arrow_title %}Previous day{% endblock %}
+{% block next_arrow_title %}Next day{% endblock %}

@@ -1,0 +1,56 @@
+application: tweethitapp
+version: 1
+runtime: python
+api_version: 1
+
+builtins:
+- datastore_admin: on
+- appstats: on
+- deferred: on
+
+handlers:
+
+- url: /remote_api
+  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  login: admin
+
+- url: /stylesheets
+  static_dir: static/css
+ 
+- url: /javascript
+  static_dir: static/js
+
+- url: /images
+  static_dir: static/images
+  
+- url: /favicon.ico
+  static_files: static/images/favicon.ico
+  upload: static/images/favicon.ico
+
+- url: /robots.txt
+  static_files: static/robots.txt
+  upload: static/robots.txt
+ 
+- url: /about/.*
+  script: tweethit/handlers/about.py
+
+- url: /taskworker/.*
+  script: tweethit/handlers/taskworker.py
+  login: admin
+  
+- url: /cron/.*
+  script: tweethit/handlers/cron.py
+  
+- url: /remote/.*
+  script: tweethit/handlers/remote.py
+  login: admin
+  
+- url: /mapreduce(/.*)?
+  script: mapreduce/main.py
+  login: admin
+
+- url: /
+  script: tweethit/handlers/main.py
+  
+- url: /.*
+  script: tweethit/handlers/main.py  

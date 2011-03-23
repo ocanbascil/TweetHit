@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>TweetHit: The Most Popular Products on Twitter</title>
+	<link rel="stylesheet" href="/stylesheets/style.css" type="text/css" />
+	<link rel="icon" type="image/png" href="/favicon.ico" />
+</head>
+
+<body>
+	<div id="wrapper">
+		<div id="header">
+			<h1><a href="{{root_url}}">TweetHit</a></h1>
+		</div>
+
+		<div id="content" align="left">
+			<div id='user_info'>
+				You're logged in as: {{user.nickname()}}<br>
+				Please update your associate IDs below.<br>
+			</div>
+			<form id='sampleform' method='post' action='' >
+			Associate ID for Amazon.com : <br /> <input type="text" name="us" /><br>
+			Associate ID for Amazon.co.uk: <br /> <input type="text" name="uk" /><br>
+			Associate ID for Amazon.ca: <br /> <input type="text" name="ca" /><br>
+			Associate ID for Amazon.de: <br /> <input type="text" name="de" /><br>
+			Associate ID for Amazon.fr: <br /> <input type="text" name="fr" /><br>
+			Associate ID for Amazon.jp: <br /> <input type="text" name="jp" /><br><br>
+			<p>
+		   <input type='submit' name='Submit' value='Submit' />  
+		   </p>
+		   </form>
+		   Your unique url:
+		   	<div id = "unique_url">
+			www.tweethit.com/asd
+			</div>
+			<br><br><br>
+			</div>
+			<div id="footer"><br>
+			</div>
+		</div>
+	</div>	
+ </body>
+</html>
+

@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TweetHit: The Most Popular Products on Twitter</title>
+  
+  <!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+  <link rel="stylesheet" href="/stylesheets/style2.css" type="text/css" media="screen" />
+  
+  <!-- scripts at bottom of page -->
+  <style media="screen">
+    #options > * {
+      float: left;
+      margin: 10px 5px 0px;
+    }
+  </style>
+    <script src="https://www.google.com/jsapi?key=ABQIAAAA5351s_7KScPqjiD6Gxgp3BTUkaCAP7ybHWCySf1h86daJMvM5RTwe2Kq87ZuxkYZtXYW2n0L45DkIA" type="text/javascript"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>	
+	<script type="text/javascript" src="/javascript/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/javascript/jquery.simpledropdown.js"></script>
+</head>
+<body>
+	<div id="header">
+		<h1><a href="{{root_url}}">TweetHit</a></h1>
+	</div>
+	<div id="locale_container">
+		<ul>
+			<li><a href="{{ root_url}}/us/{{query_string}}" class = 'locale_button' title = 'United States'><img src="/images/flags/us.jpg" align="right" border="0"></a></li>
+			<li><a href="{{ root_url}}/uk/{{query_string}}" class = 'locale_button' title = 'United Kingdom'><img src="/images/flags/uk.jpg" align="right" border="0"></a></li>
+			<li><a href="{{ root_url}}/ca/{{query_string}}" class = 'locale_button' title = 'Canada'><img src="/images/flags/ca.jpg" align="right" border="0"></a></li>
+			<li><a href="{{ root_url}}/de/{{query_string}}" class = 'locale_button' title = 'Germany'><img src="/images/flags/de.jpg" align="right" border="0"></a></li>
+			<li><a href="{{ root_url}}/fr/{{query_string}}" class = 'locale_button' title = 'France'><img src="/images/flags/fr.jpg" align="right" border="0"></a></li>
+			<li><a href="{{ root_url}}/jp/{{query_string}}" class = 'locale_button' title = 'Japan'><img src="/images/flags/jp.jpg" align="right" border="0"></a></li>
+		</ul>
+	</div>
+	<!-- AddThis Fixed-Positioned Toolbox -->
+	<div class="addthis_toolbox atfixed">   
+		<div class="custom_images">
+			<a class="addthis_button_facebook"><img src="http://www.addthis.com/cms-content/images/gallery/facebook32.png" alt="Share to Facebook" /></a>
+			<a class="addthis_button_twitter"><img src="http://www.addthis.com/cms-content/images/gallery/twitter32.png"  alt="Share to Twitter" /></a>
+			<a class="addthis_button_stumbleupon"><img src="http://www.addthis.com/cms-content/images/gallery/stumbleupon32.png" alt="Stumble It" /></a>
+			<a class="addthis_button_more"><img src="http://www.addthis.com/cms-content/images/gallery/addthis32.png" alt="More..." /></a>
+		</div>
+	</div>
+	<script type="text/javascript">
+	var addthis_share = {
+		url_transforms: {
+			clean: true,
+			remove: ['us', 'uk','de','fr','ca','jp']
+		}
+	};
+	</script>
+	<!-- AddThis Button END -->
+	<div class = "navigation_buttons">
+		<a href="{{ prev_href}}{{query_string}}" class = 'prev_button' title = '{% block prev_arrow_title %}{% endblock %}'><img src="/images/left_arrow.png" align="right" border="0"></a>
+		{% if not current_period_flag %} 
+		<a href="{{ next_href}}{{query_string}}" class = 'next_button' title = '{% block next_arrow_title %}{% endblock %}'><img src="/images/right_arrow.png" align="right" border="0"></a>
+		{% endif %}
+	</div>
+
+	<div id="wrapper">			
+		<div id="options" class="clearfix">
+			<div id="navcontainer">
+			<ul class = "floated clearfix">
+				<li><a class = "gradient" href="{{daily_ranking_href}}{{query_string}}">Daily</a></li>
+				<li><a class = "gradient" href="{{weekly_ranking_href}}{{query_string}}">Weekly</a></li>
+				<li><a class = "gradient" href="{{monthly_ranking_href}}{{query_string}}">Monthly</a></li>
+			</ul>
+			</div>
+			<div id="dropdown1">
+			<ul class = "gradient roundrect">
+				<li>Select product group</li>
+				<li>
+					<ul id="filters" class="drop">
+					<li><a href="#filter" data-filter="*" class="selected">Show all</a></li>
+					{% for group in groups %}
+					  <li><a href="#filter" data-filter=".{{group.replace(' ','')}}">{{group}} ({{groups[group]}})</a></li>
+					{% endfor %} 
+					</ul>
+				</li>
+			</ul>
+			</div>
+		</div> <!-- #options -->
+		
+	
+		<div id="summary" class = "gradient roundrect">
+		<p>{% block content %}{% endblock %}</p>
+		</div>
+		
+		<div id="columns" class="floated">
+		<ul>
+			<li>Tweets</li>
+			<li>Product</li>
+			<li>Price</li>
+		</ul>
+		</div> <!-- #columns -->
+		
+		<div id="container" class="clickable clearfix">
+		{% for item in products %}
+		<div class="element gradient roundrect {{item.product_group.replace(' ','')}}">
+		  <img class="image" src="{{item.image_small}}" width="60" height="60"/>
+		  <p class="title">{{item.title}}</p>
+		  <a class="url" href="{{ item.url}}/{{ assoc_id}}"> </a>
+		  <p class="tweets">{{ item.count}}</p>
+		  <p class="price">{% if item.price is none %}N/A{% else %}{{ item.price}}{% endif %}</p>
+		</div>
+		{% endfor %} 
+
+		</div> <!-- #container -->
+
+  </div> <!-- #wrapper -->
+  
+
+	<script>	
+	$(document).ready(function() {
+		$.simpledropdown("#dropdown1");
+	});
+	
+	var $container = $('#container');
+
+	// filter buttons
+	$('#filters a').click(function(){
+	  var selector = $(this).attr('data-filter');
+	  $container.isotope({ filter: selector });
+	  //return false;
+	});
+
+	// switches selected class on buttons
+	$('#options').find('.option-set a').click(function(){
+	var $this = $(this);
+
+	// don't proceed if already selected
+	if ( !$this.hasClass('selected') ) {
+	  $this.parents('.option-set').find('.selected').removeClass('selected');
+	  $this.addClass('selected');
+	}
+
+	});
+	  
+	// change size of clicked element
+	$container.find('.element').live('click', function(){
+	  var tweets = $(this).find('.tweets').text();
+	  var title = $(this).find('.title').text();
+	  var price = $(this).find('.price').text();
+
+	  mpmetrics.track('itemclick', {'tweets': tweets,'title' : title,'price':  price});
+
+	  window.open($(this).find('.url').attr('href'));
+	  return false;
+	});
+
+	$(function(){
+
+	  $container.isotope({
+		itemSelector : '.element',
+		layoutMode : 'straightDown'
+	  });
+	  
+	});
+	</script>
+	<script type='text/javascript'> var mp_protocol = (('https:' == document.location.protocol) ? 'https://' : 'http://'); document.write(unescape('%3Cscript src="' + mp_protocol + 'api.mixpanel.com/site_media/js/api/mixpanel.js" type="text/javascript"%3E%3C/script%3E')); </script> 
+	<script type='text/javascript'> try {  var mpmetrics = new MixpanelLib('1312b49a2ee2a660b61ee03d59330d45'); } catch(err) { null_fn = function () {}; var mpmetrics = {  track: null_fn,  track_funnel: null_fn,  register: null_fn,  register_once: null_fn, register_funnel: null_fn }; } </script>
+</body>
+</html>

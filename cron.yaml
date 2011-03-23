@@ -1,0 +1,33 @@
+cron:
+
+- description: manual product ban synch
+  url: /cron/bansynch/
+  schedule: every 5 minutes synchronized
+  
+- description: ban spammers
+  url: /cron/banspammers/
+  schedule: every 5 minutes synchronized
+  
+- description: update counters
+  url: /cron/updatecounters/
+  schedule: every 5 minutes synchronized
+   
+- description: minute top rating
+  url: /cron/rating/minute/
+  schedule: every 10 minutes synchronized
+  
+- description: daily ranking
+  url: /cron/rating/day/
+  schedule: every day 00:01
+  
+- description: weekly ranking
+  url: /cron/rating/week/
+  schedule: every tuesday 00:01
+
+- description: monthly ranking
+  url: /cron/rating/month/
+  schedule: 1 of month 00:01
+  
+- description: yearly ranking
+  url: /cron/rating/year/
+  schedule: 1 of jan 00:02

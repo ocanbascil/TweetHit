@@ -1,0 +1,11 @@
+{% extends "base_template.html" %}
+{% block content %}
+	{% if current_period_flag %} 
+	Displaying the most tweeted products for this week. <br/>
+	This list is updated daily.
+	{% else %}
+	Displaying the most tweeted products for WEEK INTERVAL
+	{% endif %}
+{% endblock %}
+{% block prev_arrow_title %}Previous week{% endblock %}
+{% block next_arrow_title %}Next week{% endblock %}
