@@ -1,6 +1,10 @@
 from PerformanceEngine import pdb,MEMCACHE,DATASTORE
+
 from google.appengine.ext import db
-from tweethit.utils.parser_util import create_parser
+from google.appengine.api import memcache
+from tweethit.utils.parser_util import create_parser,AmazonTweetParser
+
+import config
 
 DAILY='daily'
 WEEKLY='weekly'
@@ -17,6 +21,16 @@ class FrequencyBase(pdb.Model):
   week = db.IntegerProperty()
   month = db.IntegerProperty()
   year = db.IntegerProperty()
+  
+  @property
+  def key_root(self):
+    klass = self.__class__
+    return self.key().name().split(klass._default_delimiter)[0]
+  
+  @classmethod
+  def build_key(cls,key_root,frequency,date):
+    return str(db.Key.from_path(cls.kind(), 
+                                          cls.build_key_name(key_root, frequency, date)))
   
   @classmethod
   def build_key_name(cls,key_root,frequency,date):
@@ -56,12 +70,11 @@ class FrequencyError(Exception):
   def __str__(self):
     return  'Invalid frequency given for key name %s' %self.param
 
-class GlobalData(pdb.Model):
+class OperationFlags(pdb.Model):
   '''Singleton container class that holds data for synching operation'''
-  _key_name = 'GlobalData'
+  _key_name = 'OperationFlags'
   _storage = [MEMCACHE,DATASTORE]
   
-  counter_keys = db.StringListProperty()
   
   def save(self):
     self.put(_storage=self.__class__._storage)
@@ -69,7 +82,44 @@ class GlobalData(pdb.Model):
   @classmethod
   def retrieve(cls):
       return cls.get_or_insert(cls._key_name, _storage=cls._storage)
-  
+
+
+class Store(pdb.Model):
+    
+  @classmethod
+  def get_all_store_keys(cls):
+    result = []
+    for url in AmazonTweetParser.ROOT_URL_SET:
+      result.append(db.Key.from_path('Store',url))      
+    return result
+        
+  @classmethod
+  def key_for_locale(cls,locale):
+    root = 'http://www.amazon.'
+    if locale == 'us':
+      root += 'com'
+    elif locale == 'uk':
+      root += 'co.uk'
+    elif locale == 'de':
+      root += 'de'
+    elif locale == 'ca':
+      root += 'ca'
+    elif locale == 'fr':
+      root += 'fr'
+    elif locale == 'jp':
+      root += 'co.jp'
+    else:
+        raise StoreException('Store not found for locale: %s' %locale)
+    
+    return db.Key.from_path('Store',root)
+            
+class StoreException(Exception):
+    
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
+       
 class CounterBase(FrequencyBase):
   '''Base class for counters'''
   
@@ -81,15 +131,15 @@ class CounterBase(FrequencyBase):
   
   @classmethod
   def filtered_update(cls,models):
-    cls.cache_set_multi(models)
-    db_targets = [model.key().name() for model in models 
+    db_targets = [str(model.key()) for model in models 
                         if model.count >= cls._MIN_COUNT_FOR_DB_WRITE]
+    pdb.put(models,_storage=MEMCACHE)
     if len(db_targets):
         cls.update_cached_counter_keys(db_targets)
-  
-  '''Cache indexes for cron updates'''
+
   @classmethod
   def update_cached_counter_keys(cls,key_array):
+    '''Update counter_keys group in memcache for cron'''
     cached_keys = cls.get_cached_counter_keys()
     cached_keys = list(set(cached_keys + key_array))
     cls.set_cached_counter_keys(cached_keys)
@@ -106,6 +156,19 @@ class CounterBase(FrequencyBase):
   @classmethod
   def set_cached_counter_keys(cls,arr):
     memcache.set('counter_keys',arr)
+    
+class UserCounter(CounterBase):
+    '''Counter class that holds the mention counts for a twitter user
+    This is  used for finding out spam & promotion accounts and ban them'''
+    _MIN_COUNT_FOR_DB_WRITE = config.USER_COUNTER_MIN_COUNT
+
+class ProductCounter(CounterBase):
+    '''Counter class that holds the number of mentions for a product, daily,weekly, monthly and yearly'''
+    #Denormalized store reference for grouping, this is the store reference of product (parent)
+    _MIN_COUNT_FOR_DB_WRITE = config.PRODUCT_COUNTER_MIN_COUNT
+    store = db.ReferenceProperty(Store)
+    
+
 
 class Url(pdb.Model):
   '''This model is used for storing shortened - final url tuples

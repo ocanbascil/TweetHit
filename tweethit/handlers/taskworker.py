@@ -5,17 +5,15 @@ from google.appengine.ext import db
 from google.appengine.api import taskqueue
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE,ALL_LEVELS,LIST,DICT,pdb
 
-from tweethit.model import Url,Payload
+from tweethit.model import *
 
 from tweethit.utils.parser_util import ParserException,extract_urls
 from tweethit.utils.rpc import UrlFetcher
 from tweethit.utils.task_util import *
+from tweethit.utils.time_util import gmt_today
 from config import *
 
 import time
-import datetime
-
-from collections import defaultdict
 
 class UrlBucketWorker(helipad.Handler):
   '''Deserialized incoming url dicts and checks if they've been fetched before
@@ -34,9 +32,8 @@ class UrlBucketWorker(helipad.Handler):
     user_ban_list = []
     
     fetch_targets = [] #Urls that are not in lookup list
-    counter_targets = [] #Urls that were fetched before
+    counter_targets = [] #Product urls that were fetched before
     
-
     for payload in payloads:
       if payload.user_id in user_ban_list:
         #Don't take banned users' URLs into account
@@ -46,7 +43,7 @@ class UrlBucketWorker(helipad.Handler):
       url_key =  str(db.Key.from_path('Url',payload.url))    
       cached_url = cached_urls[url_key]
       if cached_url is not None:
-        if cached_url.is_product:
+        if cached_url.is_product: #cached url points to a valid product page
           counter_targets.append(Payload(cached_url.product_url,
                                                       payload.user_id, #We get user id from payload
                                                       cached_url.root_url,
@@ -115,7 +112,10 @@ class UrlFetchWorker(helipad.Handler):
                        
     pdb.put(result_urls, _storage = [LOCAL,MEMCACHE]) #Urls are stored in cache only
     
-    counter_payload = Payload.serialize(counter_targets)
+    if len(counter_targets):
+      counter_payload = Payload.serialize(counter_targets)
+    else:
+      return #Early exit if no counters targets are found
     
     timeout_ms = 100
     while True:      
@@ -135,52 +135,64 @@ class CounterWorker(helipad.Handler):
   Output: Updates cached counter objects
   '''
   def post(self):
-      payload_string = self.request.get('payload')
-      counter_targets = Payload.deserialize(payload_string)
+    from collections import defaultdict
+    payload_string = self.request.get('payload')
+    counter_targets = Payload.deserialize(payload_string)
+    today = gmt_today()
 
-      '''
-      flags = OperationFlags.retrieve()
-      
-      #Delay task if counters are being copied
-      if not (flags.weekly_counter_copy and flags.monthly_counter_copy):
-          enqueue_counter(payload_string,countdown = 60)
-          return
-      '''
+    '''
+    flags = OperationFlags.retrieve()
+    
+    #Delay task if counters are being copied
+    if not (flags.weekly_counter_copy and flags.monthly_counter_copy):
+        enqueue_counter(payload_string,countdown = 60)
+        return
+    '''
 
-      product_targets = defaultdict(int)
-      user_targets = defaultdict(int)
-      frequency = DAILY
-      DAILY_SUFFIX = '|'+frequency
-      
-      for payload in counter_targets:
-          product_targets[payload.url+DAILY_SUFFIX] += 1
-          user_targets[payload.user_id+DAILY_SUFFIX] += 1
-          
-      product_dict = ProductCounter.new_get_multi(product_targets.keys())
-      user_dict = UserCounter.new_get_multi(user_targets.keys())
-      
-      for key_name,delta in product_targets.iteritems():
-          try:
-              product_dict[key_name].count += delta
-          except KeyError:
-              product = Product(key_name = ProductCounter.build_parent_key_name(key_name))
-              product_dict[key_name] = ProductCounter(key_name = key_name,
-                                                                          count = delta,
-                                                                          add_date = gmt_today(),
-                                                                          frequency = frequency,
-                                                                          store = product.store_key)
-      for key_name,delta in user_targets.iteritems():  
-          try:
-              user_dict[key_name].count += delta
-          except KeyError:
-              user_dict[key_name] = UserCounter(key_name = key_name,count = delta,add_date = gmt_today())
-
-      ProductCounter.filtered_update(product_dict.values())
-      UserCounter.filtered_update(user_dict.values())
+    product_targets = defaultdict(int)
+    user_targets = defaultdict(int)
+    frequency = DAILY
+    
+    for payload in counter_targets:
+      product_key = ProductCounter.build_key(payload.url, DAILY, today)
+      user_key = UserCounter.build_key(payload.user_id, DAILY, today)
+      product_targets[product_key] += 1
+      user_targets[user_key] += 1
+        
+    product_counters = ProductCounter.get(product_targets.keys(),_result_type=DICT)
+    user_counters = UserCounter.get(user_targets.keys(),_result_type=DICT)
+        
+    for key,delta in product_targets.iteritems():
+      try:
+        product_counters[key].count += delta
+      except AttributeError: #Value is None in dict
+        key_name = db.Key(str(key)).name()
+        product_counters[key] = ProductCounter.new(key_name, DAILY, today,count=delta)
+        '''
+        product = Product(key_name = ProductCounter.build_parent_key_name(key_name))
+        existing_product[key_name] = ProductCounter(key_name = key_name,
+                                                                    count = delta,
+                                                                    add_date = gmt_today(),
+                                                                    frequency = frequency,
+                                                                    store = product.store_key)
+        '''
+    for key,delta in user_targets.iteritems():  
+      try:
+        user_counters[key].count += delta
+      except AttributeError: #Value is None in dict
+        key_name = db.Key(str(key)).name()
+        user_counters[key] = UserCounter.new(key_name, DAILY, today,count=delta)
+        
+    logging.info(product_counters)
+    logging.info(user_counters)
+        
+    ProductCounter.filtered_update(product_counters.values())
+    UserCounter.filtered_update(user_counters.values())
 
 main, application = helipad.app({
     '/taskworker/bucket/': UrlBucketWorker,
     '/taskworker/url/': UrlFetchWorker,
+    '/taskworker/counter/': CounterWorker,
 })
 '''
 main, application = helipad.app({
