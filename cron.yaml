@@ -16,6 +16,10 @@ cron:
   url: /cron/rating/minute/
   schedule: every 10 minutes synchronized
   
+- description: hourly ranking
+  url: /cron/rating/hour/
+  schedule: every 1 hours synchronized
+  
 - description: daily ranking
   url: /cron/rating/day/
   schedule: every day 00:01

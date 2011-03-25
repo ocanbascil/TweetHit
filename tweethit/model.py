@@ -22,6 +22,10 @@ class FrequencyBase(pdb.Model):
   month = db.IntegerProperty()
   year = db.IntegerProperty()
   
+  @classmethod
+  def frequency_from_key_name(cls,key_name):
+    return key_name.split(cls._default_delimiter)[1]
+  
   @property
   def key_root(self):
     klass = self.__class__

@@ -1,4 +1,4 @@
-from tweethit.utils.parser_util import AmazonTweetParser
+from tweethit.utils.parser_util import AmazonURLParser
 from google.appengine.api import taskqueue
 import time
 import logging
@@ -34,30 +34,24 @@ def enqueue_counter(payload,countdown = 0):
     fast_queue.add(t)
     
 @prevent_transient_error
-def enqueue_counter_copy(source_frequency,target_frequency,day_delta):
-    t = taskqueue.Task(url='/taskworker/countercopy/', 
-                  params={'source_frequency': source_frequency,
-                           'target_frequency':target_frequency,
-                           'day_delta':day_delta})
-    
-    fast_queue.add(t)
-
-@prevent_transient_error
-def enqueue_cleanup(model_kind, frequency = '',cache_cleanup = False, countdown = 0):
-    t = taskqueue.Task(url='/taskworker/cleanup/', 
-                  countdown = countdown,
+def enqueue_cleanup(model_kind, 
+                    frequency = '',date,store_key_name = None):
+    t = taskqueue.Task(url='/taskworker/cleanup/',
                   params={'model_kind': model_kind,
                            'frequency':frequency,
-                           'cache_cleanup':cache_cleanup})
+                           'date_string':str(date),
+                           'store_key_name':store_key_name
+                           })
     
     cleanup_queue.add(t)
     
 @prevent_transient_error
-def enqueue_renderer_update(frequency,date, countdown = 0,store_key_name = None):
+def enqueue_renderer_update(frequency,date, 
+                            countdown = 0,store_key_name = None):
         if store_key_name:
             store_group = [store_key_name]
         else:
-            store_group = AmazonTweetParser.ROOT_URL_SET
+            store_group = AmazonURLParser.ROOT_URL_SET
     
         for root_url in store_group:
             t = taskqueue.Task(url='/taskworker/rendererupdate/',

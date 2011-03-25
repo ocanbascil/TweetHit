@@ -8,8 +8,8 @@ DICT,KEY_NAME_DICT,pdb
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
 ProductCounter,UserCounter,ProductRenderer
-from tweethit.query import DAILY_TOP_COUNTERS,\
-WEEKLY_TOP_COUNTERS,MONTHLY_TOP_COUNTERS
+from tweethit.query import get_counter_query_for_frequency,\
+get_renderer_query_for_frequency,USER_COUNTER_CLEANUP_TARGETS
 
 from tweethit.utils.parser_util import AmazonURLParser,ParserException
 from tweethit.utils.rpc import UrlFetcher,AmazonProductFetcher
@@ -123,23 +123,18 @@ class CounterWorker(helipad.Handler):
     payload_string = self.request.get('payload')
     counter_targets = Payload.deserialize(payload_string)
     today = gmt_today()
-
-    '''
-    flags = OperationFlags.retrieve()
     
-    #Delay task if counters are being copied
-    if not (flags.weekly_counter_copy and flags.monthly_counter_copy):
-        enqueue_counter(payload_string,countdown = 60)
-        return
-    '''
-
     product_targets = defaultdict(int)
     user_targets = defaultdict(int)
     
     for payload in counter_targets:
-      product_key = ProductCounter.build_key_name(payload.url, DAILY, today)
+      daily_product_key = ProductCounter.build_key_name(payload.url, DAILY, today)
+      weekly_product_key = ProductCounter.build_key_name(payload.url, WEEKLY, today)
+      monthly_product_key = ProductCounter.build_key_name(payload.url, MONTHLY, today)
       user_key = UserCounter.build_key_name(payload.user_id, DAILY, today)
-      product_targets[product_key] += 1
+      product_targets[daily_product_key] += 1
+      product_targets[weekly_product_key] += 1
+      product_targets[monthly_product_key] += 1
       user_targets[user_key] += 1
         
     product_counters = ProductCounter.get_by_key_name(product_targets.keys(),
@@ -151,7 +146,8 @@ class CounterWorker(helipad.Handler):
       try:
         product_counters[key_name].count += delta
       except AttributeError: #Value is None in dict
-        product_counters[key_name] = ProductCounter.new(key_name, DAILY, today,
+        frequency = ProductCounter.frequency_from_key_name(key_name)
+        product_counters[key_name] = ProductCounter.new(key_name, frequency, today,
                                                    count=delta,_build_key_name = False)
 
     for key_name,delta in user_targets.iteritems():  
@@ -163,72 +159,44 @@ class CounterWorker(helipad.Handler):
                 
     ProductCounter.filtered_update(product_counters.values())
     UserCounter.filtered_update(user_counters.values())
+
     
 class ProductRendererUpdater(helipad.Handler):
-    '''Create & update product renderers for given parameters
-    params:
-        - store_key_name : key name for store instance (http://www.amazon.com)
-        - is_ranked : True / False (used for cleanup)
-        - day_delta : This will be zero for today, -1 or else for computing past values
-        - frequency : This will be the frequency property of created renderers 
-    '''
-    def post(self):
-      store_key_name = self.request.get('store_key_name')
-      date = str_to_date(self.request.get('date_string'))
-      frequency = self.request.get('frequency')
+  '''Create & update product renderers for given parameters
+  params:
+      - store_key_name : key name for store instance (http://www.amazon.com)
+      - is_ranked : True / False (used for cleanup)
+      - day_delta : This will be zero for today, -1 or else for computing past values
+      - frequency : This will be the frequency property of created renderers 
+  '''
+  def post(self):
+    store_key_name = self.request.get('store_key_name')
+    date = str_to_date(self.request.get('date_string'))
+    frequency = self.request.get('frequency')
       
-      logging.info('Updating %s renderers for %s on %s' %(frequency,store_key_name,date))
-        
-      #flags = OperationFlags.retrieve()
-      delay_flag = False
-      '''
-      if frequency == MONTHLY and not flags.monthly_counter_copy:
-        delay_flag = True
-      elif frequency == WEEKLY and not flags.weekly_counter_copy:
-        delay_flag = True
-          
-      if delay_flag:
-        logging.info('Delaying creation of renderers for frequency: %s' %frequency)
-        enqueue_renderer_update(frequency,day_delta,is_ranked,
-                                countdown = 60,store_key_name = store_key_name)
-        return
-      '''
-      
-      store = Key.from_path('Store',store_key_name)
-      
-      renderers = []
-      if frequency == DAILY:
-        query = DAILY_TOP_COUNTERS
-        query.bind(store = store,day = date)
-      elif frequency == WEEKLY:
-        query = WEEKLY_TOP_COUNTERS
-        query.bind(store = store, week = date.isocalendar()[1],year = date.year)
-      elif frequency == MONTHLY:
-        query = MONTHLY_TOP_COUNTERS 
-        query.bind(store = store, month = date.month,year = date.year)
-            
-      product_counters = query.fetch(TEMPLATE_PRODUCT_COUNT)
-      key_names = [counter.key().name() for counter in product_counters ]
-      product_renderers = ProductRenderer.get_by_key_name(key_names,
-                                                          _storage=[MEMCACHE,DATASTORE],_result_type=KEY_NAME_DICT)
-      logging.info('product counters: %s' %product_counters)
-      
-      for counter in product_counters:
-        renderer = product_renderers[counter.key().name()]
-        try:
-          renderer.count = counter.count
-          renderers.append(renderer)
-        except AttributeError: #Renderer is none
-          
-          enqueue_renderer_info(counter.key_root, 
-                                        counter.count,
-                                        frequency,
-                                        date)
-          
-      if len(renderers):
-        pdb.put(renderers, _storage=[MEMCACHE,DATASTORE])
+    renderers = []
+    store_key = Key.from_path('Store',store_key_name)
+    query = get_counter_query_for_frequency(frequency, date, store_key)
 
-      #flags.save()
+    product_counters = query.fetch(TEMPLATE_PRODUCT_COUNT)
+    key_names = [counter.key().name() for counter in product_counters ]
+    product_renderers = ProductRenderer.get_by_key_name(key_names,
+                                                        _storage=[MEMCACHE,DATASTORE],
+                                                        _result_type=KEY_NAME_DICT)
+    
+    for counter in product_counters:
+      renderer = product_renderers[counter.key().name()]
+      try:
+        renderer.count = counter.count
+        renderers.append(renderer)
+      except AttributeError: #Renderer is none
+        enqueue_renderer_info(counter.key_root, 
+                                      counter.count,
+                                      frequency,
+                                      date)
+    if len(renderers):
+      pdb.put(renderers, _storage=[MEMCACHE,DATASTORE])
+
 
 class ProductRendererInfoFetcher(helipad.Handler):
   #Retrieve information for a product to be displayed on web page
@@ -262,6 +230,40 @@ class ProductRendererInfoFetcher(helipad.Handler):
                                         date, count = count,is_banned=True)
         renderer.log_properties()
         renderer.put(_storage=[MEMCACHE,DATASTORE])
+      
+class CleanupWorker(helipad.Handler):
+    def post(self):
+        model_kind = self.request.get('model_kind')
+        frequency = self.request.get('frequency')
+        date = str_to_date(self.request.get('date_string'))
+        store_key_name = self.request.get('store_key_name')
+        
+        logging.info('Cleanupworker model kind: %s cache_cleanup: \
+        %s frequency: %s' %(model_kind,frequency,store_key_name))
+        
+        recursion_flag = False
+        
+        if model_kind == 'ProductRenderer':
+          store_key = Key.from_path('Store',store_key_name)
+          query = get_renderer_query_for_frequency(frequency, date, store_key)
+          keys = query.fetch(200, TEMPLATE_PRODUCT_COUNT)
+        elif model_kind == 'ProductCounter':
+          store_key = Key.from_path('Store',store_key_name)
+          query = get_counter_query_for_frequency(frequency, date, store_key)
+          keys = query.fetch(200)
+        elif model_kind == 'UserCounter':
+          query = USER_COUNTER_CLEANUP_TARGETS
+          keys = query.fetch(200)
+        else:
+          logging.error('No type found for CleanupWorker :%s' %model_kind)
+ 
+        if len(keys):
+          recursion_flag = True
+          pdb.delete(keys)
+        
+        if recursion_flag:
+          enqueue_cleanup(model_kind = model_kind,
+                      frequency = frequency)
 
 main, application = helipad.app({
     '/taskworker/bucket/': UrlBucketWorker,
@@ -269,6 +271,7 @@ main, application = helipad.app({
     '/taskworker/counter/': CounterWorker,
     '/taskworker/rendererupdate/':ProductRendererUpdater,
     '/taskworker/rendererinfo/':ProductRendererInfoFetcher,
+    '/taskworker/cleanup/': CleanupWorker,
 })
 '''
 main, application = helipad.app({
