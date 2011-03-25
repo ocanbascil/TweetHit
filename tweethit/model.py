@@ -92,6 +92,11 @@ class Store(pdb.Model):
     for url in AmazonTweetParser.ROOT_URL_SET:
       result.append(db.Key.from_path('Store',url))      
     return result
+  
+  @classmethod
+  def key_from_product_url(cls,product_url):
+    root = 'http://'+product_url.split('/')[2]
+    return db.Key.from_path('Store',root)
         
   @classmethod
   def key_for_locale(cls,locale):

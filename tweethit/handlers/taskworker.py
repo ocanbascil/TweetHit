@@ -151,7 +151,6 @@ class CounterWorker(helipad.Handler):
 
     product_targets = defaultdict(int)
     user_targets = defaultdict(int)
-    frequency = DAILY
     
     for payload in counter_targets:
       product_key = ProductCounter.build_key(payload.url, DAILY, today)
@@ -166,26 +165,18 @@ class CounterWorker(helipad.Handler):
       try:
         product_counters[key].count += delta
       except AttributeError: #Value is None in dict
-        key_name = db.Key(str(key)).name()
-        product_counters[key] = ProductCounter.new(key_name, DAILY, today,count=delta)
-        '''
-        product = Product(key_name = ProductCounter.build_parent_key_name(key_name))
-        existing_product[key_name] = ProductCounter(key_name = key_name,
-                                                                    count = delta,
-                                                                    add_date = gmt_today(),
-                                                                    frequency = frequency,
-                                                                    store = product.store_key)
-        '''
+        key_name = db.Key(key).name()
+        store_key = Store.key_from_product_url(key_name)
+        product_counters[key] = ProductCounter.new(key_name, DAILY, today,
+                                                   count=delta,store = store_key)
+
     for key,delta in user_targets.iteritems():  
       try:
         user_counters[key].count += delta
       except AttributeError: #Value is None in dict
-        key_name = db.Key(str(key)).name()
+        key_name = db.Key(key).name()
         user_counters[key] = UserCounter.new(key_name, DAILY, today,count=delta)
-        
-    logging.info(product_counters)
-    logging.info(user_counters)
-        
+                
     ProductCounter.filtered_update(product_counters.values())
     UserCounter.filtered_update(user_counters.values())
 
