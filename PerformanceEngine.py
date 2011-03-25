@@ -18,7 +18,8 @@ ALL_LEVELS = [DATASTORE,MEMCACHE,LOCAL]
 
 '''Constants for result types'''
 LIST = 'list'
-DICT = 'dict' #not implemented yet
+DICT = 'dict'
+KEY_NAME_DICT = 'key_name_dict'
 
 LOCAL_EXPIRATION = 0
 MEMCACHE_EXPIRATION = 0
@@ -35,6 +36,10 @@ def key_str(param):
     return str(db._coerce_to_key(param))
   except db.BadArgumentError:
     raise KeyParameterError(param)
+  
+def id_or_name(key_str):
+  key = db.Key(key_str)
+  return key.name() or str(key.id())
 
 def _diff(list1,list2):
   '''Finds the difference of keys between 2 lists
@@ -234,6 +239,11 @@ class pdb(object):
       return result[0]
     elif _result_type == DICT:
       return models
+    elif _result_type == KEY_NAME_DICT:
+      result = {}
+      for k,v in models.iteritems():
+        result[id_or_name(k)] = v
+      return result
     else:
       raise ResultTypeError(_result_type)
         

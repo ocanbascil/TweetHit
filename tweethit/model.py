@@ -176,7 +176,34 @@ class ProductCounter(CounterBase):
     #Denormalized store reference for grouping, this is the store reference of product (parent)
     _MIN_COUNT_FOR_DB_WRITE = config.PRODUCT_COUNTER_MIN_COUNT
     store = db.ReferenceProperty(Store)
+      
+class ProductRenderer(FrequencyBase):
+    '''Data model for holding product information
+    Includes data from Product,ProductCounter,Amazon Products API
+    Model must be unique for date & url properties => Parent =  product, key_name = current date
     
+    Do not do any logic operations using this class
+    This is used for creating views only
+    '''
+    
+    store = db.ReferenceProperty(Store)
+    #product = db.ReferenceProperty(Product)
+    is_banned = db.BooleanProperty(default = False)
+    is_ban_synched = db.BooleanProperty(default = False)
+        
+    url = db.LinkProperty(indexed = False)
+    
+    #Amazon Product API
+    image_small = db.LinkProperty(indexed=False)
+    image_medium = db.LinkProperty(indexed=False)
+    image_large = db.LinkProperty(indexed=False)
+    price = db.StringProperty(indexed=False) #price + currency representation
+    product_group = db.StringProperty(indexed=False)
+    title = db.StringProperty(indexed=False)
+    rating = db.FloatProperty(indexed = False,default = 0.0)
+    
+    #ProductCounter
+    count = db.IntegerProperty(default = 0)
 
 
 class Url(pdb.Model):
@@ -211,11 +238,9 @@ class Url(pdb.Model):
 class Payload(dict):
   '''This class is serialized and passed along taskworkers as message body'''
   
-  def __init__(self,url,user_id,store_url=None,asin=None):
+  def __init__(self,url,user_id):
     self['url'] = url
     self['user_id'] = user_id
-    self['store_url'] = store_url
-    self['asin'] = asin
           
   @property
   def url(self):
@@ -224,15 +249,7 @@ class Payload(dict):
   @property
   def user_id(self):
     return str(self['user_id'])
-   
-  @property 
-  def store_url(self):
-    return self['store_url']
-  
-  @property
-  def asin(self):
-    return self['asin']
-   
+      
   @classmethod
   def serialize(cls,array):
       return repr(array)
@@ -243,7 +260,5 @@ class Payload(dict):
     result = []
     for item in arr:
         result.append(Payload(item['url'],
-                              item['user_id'],
-                              item['store_url'],
-                              item['asin']))
+                              item['user_id']))
     return result

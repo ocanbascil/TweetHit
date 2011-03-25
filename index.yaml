@@ -12,6 +12,14 @@ indexes:
 
 - kind: ProductCounter
   properties:
+  - name: day
+  - name: is_banned
+  - name: store
+  - name: count
+    direction: desc
+
+- kind: ProductCounter
+  properties:
   - name: frequency
   - name: count
 

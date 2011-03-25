@@ -1,6 +1,10 @@
 import time
 import datetime
 
+def str_to_date(string):
+  arr = map(int,string.split('-'))
+  return datetime.date(arr[0],arr[1],arr[2])
+
 def gmt_today():
     gmt  = time.gmtime()
     return datetime.date(gmt[0],gmt[1],gmt[2])
