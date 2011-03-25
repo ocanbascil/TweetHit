@@ -122,7 +122,7 @@ class Store(pdb.Model):
     elif locale == 'jp':
       root += 'co.jp'
     else:
-        raise StoreException('Store not found for locale: %s' %locale)
+      raise StoreException('Store not found for locale: %s' %locale)
     
     return db.Key.from_path('Store',root)
             
@@ -190,32 +190,39 @@ class ProductCounter(CounterBase,StoreFrequencyBase):
   _MIN_COUNT_FOR_DB_WRITE = config.PRODUCT_COUNTER_MIN_COUNT
       
 class ProductRenderer(StoreFrequencyBase):
-    '''Data model for holding product information
-    Includes data from Product,ProductCounter,Amazon Products API
-    Model must be unique for date & url properties => Parent =  product, key_name = current date
+  '''Data model for holding product information
+  Includes data from Product,ProductCounter,Amazon Products API
+  Model must be unique for date & url properties => Parent =  product, key_name = current date
+  
+  Do not do any logic operations using this class
+  This is used for creating views only
+  '''
     
-    Do not do any logic operations using this class
-    This is used for creating views only
-    '''
-    
-    #store = db.ReferenceProperty(Store)
-    #product = db.ReferenceProperty(Product)
-    is_banned = db.BooleanProperty(default = False)
-    is_ban_synched = db.BooleanProperty(default = False)
-        
-    url = db.LinkProperty(indexed = False)
-    
-    #Amazon Product API
-    image_small = db.LinkProperty(indexed=False)
-    image_medium = db.LinkProperty(indexed=False)
-    image_large = db.LinkProperty(indexed=False)
-    price = db.StringProperty(indexed=False) #price + currency representation
-    product_group = db.StringProperty(indexed=False)
-    title = db.StringProperty(indexed=False)
-    rating = db.FloatProperty(indexed = False,default = 0.0)
-    
-    #ProductCounter
-    count = db.IntegerProperty(default = 0)
+  @classmethod
+  def new(cls,*args,**kwds):
+    entity = super(ProductRenderer, cls).new(*args,**kwds)
+    url = AmazonURLParser.product_url(args[0])
+    entity.url = url
+    return entity
+  
+  #store = db.ReferenceProperty(Store)
+  #product = db.ReferenceProperty(Product)
+  is_banned = db.BooleanProperty(default = False)
+  is_ban_synched = db.BooleanProperty(default = False)
+      
+  url = db.LinkProperty(indexed = False)
+  
+  #Amazon Product API
+  image_small = db.LinkProperty(indexed=False)
+  image_medium = db.LinkProperty(indexed=False)
+  image_large = db.LinkProperty(indexed=False)
+  price = db.StringProperty(indexed=False) #price + currency representation
+  product_group = db.StringProperty(indexed=False)
+  title = db.StringProperty(indexed=False)
+  rating = db.FloatProperty(indexed = False,default = 0.0)
+  
+  #ProductCounter
+  count = db.IntegerProperty(default = 0)
 
 
 class Url(pdb.Model):

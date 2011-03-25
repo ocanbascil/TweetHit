@@ -8,6 +8,7 @@ DICT,KEY_NAME_DICT,pdb
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
 ProductCounter,UserCounter,ProductRenderer
+
 from tweethit.query import get_counter_query_for_frequency,\
 get_renderer_query_for_frequency,USER_COUNTER_CLEANUP_TARGETS
 

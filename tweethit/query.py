@@ -67,7 +67,6 @@ def get_renderer_query_for_frequency(frequency,date,store_key):
   elif frequency == MONTHLY:
     query = MONTHLY_RENDERERS 
     query.bind(store = store_key, month = date.month,year = date.year)
-    
   return query
 
 USER_COUNTER_CLEANUP_TARGETS = GqlQuery('SELECT __key__ FROM UserCounter')

@@ -5,6 +5,10 @@ def str_to_date(string):
   if len(string):
     year,month,day = map(int,string.split('-'))
     return datetime.date(year,month,day)
+  
+def date_to_str_tuple(date):
+  year,month,day = str(date).split('-')
+  return year,month,day
 
 def gmt_today():
     gmt  = time.gmtime()
