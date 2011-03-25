@@ -17,6 +17,7 @@ def prevent_transient_error(fn):
       except taskqueue.TransientError:
         time.sleep(timeout_ms)
         timeout_ms *= 2
+  return keep_trying
 
 @prevent_transient_error
 def enqueue_url_fetch(payload):
@@ -68,14 +69,14 @@ def enqueue_renderer_update(frequency,date, countdown = 0,store_key_name = None)
             countdown += 1 #Just in case they all start to write operation flags at once
    
 @prevent_transient_error     
-def enqueue_renderer_info(product_key_name,count,date,
-                                        frequency,countdown = 0,retries = 0):
+def enqueue_renderer_info(product_key_name,count,frequency,date,
+                                        countdown = 0,retries = 0):
 
     t = taskqueue.Task(url='/taskworker/rendererinfo/', 
                        countdown = countdown,
                        params={'product_key_name': product_key_name,
                                 'count':count,
-                                'date':str(date),
+                                'date_string':str(date),
                                 'frequency': frequency,
                                 'retries' : retries,})
     productinfo_queue.add(t)

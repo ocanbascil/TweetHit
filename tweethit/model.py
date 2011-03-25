@@ -2,7 +2,7 @@ from PerformanceEngine import pdb,MEMCACHE,DATASTORE
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
-from tweethit.utils.parser_util import create_parser,AmazonTweetParser
+from tweethit.utils.parser_util import create_parser,AmazonURLParser
 
 import config
 
@@ -29,8 +29,8 @@ class FrequencyBase(pdb.Model):
   
   @classmethod
   def build_key(cls,key_root,frequency,date):
-    return str(db.Key.from_path(cls.kind(), 
-                                          cls.build_key_name(key_root, frequency, date)))
+    return db.Key.from_path(cls.kind(), 
+                                    cls.build_key_name(key_root, frequency, date))
   
   @classmethod
   def build_key_name(cls,key_root,frequency,date):
@@ -93,7 +93,7 @@ class Store(pdb.Model):
   @classmethod
   def get_all_store_keys(cls):
     result = []
-    for url in AmazonTweetParser.ROOT_URL_SET:
+    for url in AmazonURLParser.ROOT_URL_SET:
       result.append(db.Key.from_path('Store',url))      
     return result
   
@@ -171,13 +171,21 @@ class UserCounter(CounterBase):
     This is  used for finding out spam & promotion accounts and ban them'''
     _MIN_COUNT_FOR_DB_WRITE = config.USER_COUNTER_MIN_COUNT
 
-class ProductCounter(CounterBase):
-    '''Counter class that holds the number of mentions for a product, daily,weekly, monthly and yearly'''
-    #Denormalized store reference for grouping, this is the store reference of product (parent)
-    _MIN_COUNT_FOR_DB_WRITE = config.PRODUCT_COUNTER_MIN_COUNT
-    store = db.ReferenceProperty(Store)
+class StoreFrequencyBase(FrequencyBase):
+  store = db.ReferenceProperty()
+  
+  @classmethod
+  def new(cls,*args,**kwds):
+    entity = super(StoreFrequencyBase, cls).new(*args,**kwds)
+    store_key_name = AmazonURLParser.root_url(args[0])
+    entity.store = db.Key.from_path('Store',store_key_name)
+    return entity
+
+class ProductCounter(CounterBase,StoreFrequencyBase):
+  '''Counter class that holds the number of mentions for a product, daily,weekly, monthly and yearly'''
+  _MIN_COUNT_FOR_DB_WRITE = config.PRODUCT_COUNTER_MIN_COUNT
       
-class ProductRenderer(FrequencyBase):
+class ProductRenderer(StoreFrequencyBase):
     '''Data model for holding product information
     Includes data from Product,ProductCounter,Amazon Products API
     Model must be unique for date & url properties => Parent =  product, key_name = current date
@@ -186,7 +194,7 @@ class ProductRenderer(FrequencyBase):
     This is used for creating views only
     '''
     
-    store = db.ReferenceProperty(Store)
+    #store = db.ReferenceProperty(Store)
     #product = db.ReferenceProperty(Product)
     is_banned = db.BooleanProperty(default = False)
     is_ban_synched = db.BooleanProperty(default = False)

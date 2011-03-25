@@ -50,7 +50,25 @@ class AmazonURLParser(UrlParser):
   @classmethod
   def product_url(cls,url):
     return cls.root_url(url) + cls.DEFAULT_PREFIX + cls.extract_asin(url)
-  
+
+  @classmethod
+  def get_locale(cls,url):
+    root_url = cls.root_url(url)
+    if root_url == cls.US_ROOT:
+      return 'us'
+    elif root_url == cls.UK_ROOT:
+      return 'uk'
+    elif root_url == cls.CA_ROOT:
+      return 'ca'
+    elif root_url == cls.DE_ROOT:
+      return 'de'
+    elif root_url == cls.FR_ROOT:
+      return 'fr'
+    elif root_url == cls.JP_ROOT:
+      return 'jp'
+    else:
+      return None
+            
   @classmethod
   def extract_asin(cls,url):  
     url = cls._remove_params(url)

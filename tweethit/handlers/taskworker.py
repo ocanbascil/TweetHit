@@ -4,18 +4,22 @@ import logging
 from google.appengine.ext.db import Key
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
-ALL_LEVELS,LIST,DICT,KEY_NAME_DICT,pdb
+DICT,KEY_NAME_DICT,pdb
 
-from tweethit.model import *
-from tweethit.query import DAILY_TOP_COUNTERS
+from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
+ProductCounter,UserCounter,ProductRenderer
+from tweethit.query import DAILY_TOP_COUNTERS,\
+WEEKLY_TOP_COUNTERS,MONTHLY_TOP_COUNTERS
 
 from tweethit.utils.parser_util import AmazonURLParser,ParserException
-from tweethit.utils.rpc import UrlFetcher
-from tweethit.utils.task_util import *
-from tweethit.utils.time_util import gmt_today,str_to_date
-from config import *
+from tweethit.utils.rpc import UrlFetcher,AmazonProductFetcher
 
-import time
+from tweethit.utils.task_util import enqueue_cleanup,enqueue_counter, \
+enqueue_url_fetch,enqueue_renderer_info
+
+from tweethit.utils.time_util import gmt_today,str_to_date
+from config import TEMPLATE_PRODUCT_COUNT,MAX_PRODUCT_INFO_RETRIES
+
 
 class UrlBucketWorker(helipad.Handler):
   '''Deserialized incoming url dicts and checks if they've been fetched before
@@ -89,7 +93,7 @@ class UrlFetchWorker(helipad.Handler):
         continue #No action for invalid urls
       
       try:
-        product_url = AmazonURLParser.product_url(url.final_ur)
+        product_url = AmazonURLParser.product_url(url.final_url)
         user_id = url.user_id
         
         if product_url in product_ban_list:
@@ -133,21 +137,22 @@ class CounterWorker(helipad.Handler):
     user_targets = defaultdict(int)
     
     for payload in counter_targets:
-      product_key = ProductCounter.build_key(payload.url, DAILY, today)
-      user_key = UserCounter.build_key(payload.user_id, DAILY, today)
+      product_key = ProductCounter.build_key_name(payload.url, DAILY, today)
+      user_key = UserCounter.build_key_name(payload.user_id, DAILY, today)
       product_targets[product_key] += 1
       user_targets[user_key] += 1
         
-    product_counters = ProductCounter.get(product_targets.keys(),_result_type=KEY_NAME_DICT)
-    user_counters = UserCounter.get(user_targets.keys(),_result_type=KEY_NAME_DICT)
+    product_counters = ProductCounter.get_by_key_name(product_targets.keys(),
+                                                      _result_type=KEY_NAME_DICT)
+    user_counters = UserCounter.get_by_key_name(user_targets.keys(),
+                                                _result_type=KEY_NAME_DICT)
         
     for key_name,delta in product_targets.iteritems():
       try:
         product_counters[key_name].count += delta
       except AttributeError: #Value is None in dict
-        store_key = Store.key_from_product_url(key_name)
         product_counters[key_name] = ProductCounter.new(key_name, DAILY, today,
-                                                   count=delta,store = store_key,_build_key_name = False)
+                                                   count=delta,_build_key_name = False)
 
     for key_name,delta in user_targets.iteritems():  
       try:
@@ -168,14 +173,13 @@ class ProductRendererUpdater(helipad.Handler):
         - frequency : This will be the frequency property of created renderers 
     '''
     def post(self):
-      import datetime
       store_key_name = self.request.get('store_key_name')
       date = str_to_date(self.request.get('date_string'))
       frequency = self.request.get('frequency')
       
       logging.info('Updating %s renderers for %s on %s' %(frequency,store_key_name,date))
         
-      flags = OperationFlags.retrieve()
+      #flags = OperationFlags.retrieve()
       delay_flag = False
       '''
       if frequency == MONTHLY and not flags.monthly_counter_copy:
@@ -193,10 +197,17 @@ class ProductRendererUpdater(helipad.Handler):
       store = Key.from_path('Store',store_key_name)
       
       renderers = []
-  
-      DAILY_TOP_COUNTERS.bind(store = store,day = date)
-      
-      product_counters = DAILY_TOP_COUNTERS.fetch(TEMPLATE_PRODUCT_COUNT)
+      if frequency == DAILY:
+        query = DAILY_TOP_COUNTERS
+        query.bind(store = store,day = date)
+      elif frequency == WEEKLY:
+        query = WEEKLY_TOP_COUNTERS
+        query.bind(store = store, week = date.isocalendar()[1],year = date.year)
+      elif frequency == MONTHLY:
+        query = MONTHLY_TOP_COUNTERS 
+        query.bind(store = store, month = date.month,year = date.year)
+            
+      product_counters = query.fetch(TEMPLATE_PRODUCT_COUNT)
       key_names = [counter.key().name() for counter in product_counters ]
       product_renderers = ProductRenderer.get_by_key_name(key_names,
                                                           _storage=[MEMCACHE,DATASTORE],_result_type=KEY_NAME_DICT)
@@ -211,63 +222,53 @@ class ProductRendererUpdater(helipad.Handler):
           
           enqueue_renderer_info(counter.key_root, 
                                         counter.count,
-                                        date,
-                                        frequency)
-          '''
-          enqueue_renderer_info(product_key_name,counter.count,
-                                            date,frequency,is_ranked)
-          '''
-          logging.info('Enqueuing product info fetch for: %s' %counter.key().name())
+                                        frequency,
+                                        date)
           
       if len(renderers):
-        logging.info('Inserting renderer array with length: %s' %len(renderers))
         pdb.put(renderers, _storage=[MEMCACHE,DATASTORE])
 
-      flags.save()
-'''
+      #flags.save()
+
 class ProductRendererInfoFetcher(helipad.Handler):
   #Retrieve information for a product to be displayed on web page
   def post(self):
     product_key_name = self.request.get('product_key_name')
     count = int(self.request.get('count'))
     retries = int(self.request.get('retries'))
-    date_string = self.request.get('date') 
+    date = str_to_date(self.request.get('date_string'))
     frequency = self.request.get('frequency')
     
     logging.info('Fetching details for %s , frequency: %s' %(product_key_name,frequency))
     
-    year,month,day = map(int,date_string.split('-'))
-    date = datetime.date(year,month,day)
-    
-    product = Product(key_name = product_key_name)
-    
     #Create empty renderer 
-    renderer = ProductRenderer.new(product_key_name, date, frequency,count = count)
+    renderer = ProductRenderer.new(product_key_name,frequency, date,count = count)
     
-    renderer = AmazonProductFetcher.get_product_details(product.asin, renderer,product.locale)
+    asin = AmazonURLParser.extract_asin(product_key_name)
+    locale = AmazonURLParser.get_locale(product_key_name)
+    renderer = AmazonProductFetcher.get_product_details(asin, renderer,locale)
     
     if renderer is not None: #If all details were fetched successfully
-      renderer.new_put()
+      renderer.put(_storage=[MEMCACHE,DATASTORE])
     else:
-        
       if retries <  MAX_PRODUCT_INFO_RETRIES:
         retries += 1
         logging.error('Error saving product: %s, adding to queue again, retries: %s' %(product_key_name,retries))
-        enqueue_renderer_info(product_key_name,count,date,frequency,
-                                        is_ranked, countdown = 60, retries = retries)
+        enqueue_renderer_info(product_key_name,count,frequency,date,
+                                        countdown = 60, retries = retries)
       else:
         logging.critical('Max retries reached for product: %s' %product_key_name)
-        renderer = ProductRenderer.new(product_key_name, date, frequency,count = count)
-        renderer.is_banned = True
+        renderer = ProductRenderer.new(product_key_name,frequency,
+                                        date, count = count,is_banned=True)
         renderer.log_properties()
-        renderer.new_put()
-'''
+        renderer.put(_storage=[MEMCACHE,DATASTORE])
+
 main, application = helipad.app({
     '/taskworker/bucket/': UrlBucketWorker,
     '/taskworker/url/': UrlFetchWorker,
     '/taskworker/counter/': CounterWorker,
     '/taskworker/rendererupdate/':ProductRendererUpdater,
-    #'/taskworker/rendererinfo/':ProductRendererInfoFetcher,
+    '/taskworker/rendererinfo/':ProductRendererInfoFetcher,
 })
 '''
 main, application = helipad.app({
