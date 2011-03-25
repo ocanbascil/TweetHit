@@ -323,20 +323,18 @@ class pdb(object):
     Raises:
       TransactionFailedError if the data could not be committed.
     """
-    def txn():      
-      if DATASTORE in _storage:
-        db.delete(keys)
-        
-      if LOCAL in _storage:
-        _cachepy_delete(keys)
-  
-      if MEMCACHE in _storage:
-        _memcache_delete(keys)
-    
     keys = map(key_str, _to_list(keys))
     _storage = _to_list(_storage)
     validate_storage(_storage)  
-    db.run_in_transaction(txn)
+    
+    if DATASTORE in _storage:
+      db.delete(keys)
+      
+    if LOCAL in _storage:
+      _cachepy_delete(keys)
+
+    if MEMCACHE in _storage:
+      _memcache_delete(keys)
   
   
   class Model(db.Model):

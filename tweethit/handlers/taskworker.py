@@ -238,8 +238,8 @@ class CleanupWorker(helipad.Handler):
         date = str_to_date(self.request.get('date_string'))
         store_key_name = self.request.get('store_key_name')
         
-        logging.info('Cleanupworker model kind: %s cache_cleanup: \
-        %s frequency: %s' %(model_kind,frequency,store_key_name))
+        logging.info('Cleanupworker model kind: %s frequency: \
+        %s store: %s' %(model_kind,frequency,store_key_name))
         
         recursion_flag = False
         
@@ -262,8 +262,8 @@ class CleanupWorker(helipad.Handler):
           pdb.delete(keys)
         
         if recursion_flag:
-          enqueue_cleanup(model_kind = model_kind,
-                      frequency = frequency)
+          logging.info('Enqueing cleanup for model %s' %model_kind)
+          enqueue_cleanup(model_kind,frequency,str(date),store_key_name)
 
 main, application = helipad.app({
     '/taskworker/bucket/': UrlBucketWorker,

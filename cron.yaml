@@ -20,16 +20,16 @@ cron:
   url: /cron/rating/hour/
   schedule: every 1 hours synchronized
   
-- description: daily ranking
-  url: /cron/rating/day/
+- description: daily cleanup
+  url: /cron/cleanup/day/
   schedule: every day 00:01
-  
-- description: weekly ranking
-  url: /cron/rating/week/
-  schedule: every tuesday 00:01
-
-- description: monthly ranking
-  url: /cron/rating/month/
+ 
+- description: weekly cleanup
+  url: /cron/cleanup/week/
+  schedule: every monday 00:01
+ 
+- description: monthly cleanup
+  url: /cron/cleanup/month/
   schedule: 1 of month 00:01
   
 - description: yearly ranking

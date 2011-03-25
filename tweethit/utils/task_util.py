@@ -21,58 +21,69 @@ def prevent_transient_error(fn):
 
 @prevent_transient_error
 def enqueue_url_fetch(payload):
-    t = taskqueue.Task(url='/taskworker/url/', 
-                      params={'payload': payload})
-    url_queue.add(t)
+  t = taskqueue.Task(url='/taskworker/url/', 
+                    params={'payload': payload})
+  url_queue.add(t)
     
 @prevent_transient_error
 def enqueue_counter(payload,countdown = 0):
-    t = taskqueue.Task(url='/taskworker/counter/', 
-                       countdown = countdown,
-                       params={'payload': payload})
-    
-    fast_queue.add(t)
+  t = taskqueue.Task(url='/taskworker/counter/', 
+                     countdown = countdown,
+                     params={'payload': payload})
+  
+  fast_queue.add(t)
     
 @prevent_transient_error
 def enqueue_cleanup(model_kind, 
-                    frequency = '',date,store_key_name = None):
-    t = taskqueue.Task(url='/taskworker/cleanup/',
-                  params={'model_kind': model_kind,
-                           'frequency':frequency,
-                           'date_string':str(date),
-                           'store_key_name':store_key_name
-                           })
+                    frequency,date,store_key_name = None):
+  
+  if model_kind != 'UserCounter':
+    if store_key_name:
+      store_group = [store_key_name]
+    else:
+      store_group = AmazonURLParser.ROOT_URL_SET    
     
+    for root_url in store_group:
+      t = taskqueue.Task(url='/taskworker/cleanup/',
+                    params={'model_kind': model_kind,
+                             'frequency':frequency,
+                             'date_string':str(date),
+                             'store_key_name':root_url
+                             })
+      
+      cleanup_queue.add(t)
+  else:
+    t = taskqueue.Task(url='/taskworker/cleanup/',
+              params={'model_kind': model_kind})
     cleanup_queue.add(t)
     
 @prevent_transient_error
 def enqueue_renderer_update(frequency,date, 
                             countdown = 0,store_key_name = None):
-        if store_key_name:
-            store_group = [store_key_name]
-        else:
-            store_group = AmazonURLParser.ROOT_URL_SET
-    
-        for root_url in store_group:
-            t = taskqueue.Task(url='/taskworker/rendererupdate/',
-                               countdown = countdown, 
-                              params={'store_key_name': root_url,
-                                        'frequency':frequency,
-                                        'date_string':str(date)})
-            fast_queue.add(t)
-            countdown += 1 #Just in case they all start to write operation flags at once
+  if store_key_name:
+    store_group = [store_key_name]
+  else:
+    store_group = AmazonURLParser.ROOT_URL_SET
+
+  for root_url in store_group:
+    t = taskqueue.Task(url='/taskworker/rendererupdate/',
+                       countdown = countdown, 
+                      params={'store_key_name': root_url,
+                                'frequency':frequency,
+                                'date_string':str(date)})
+    fast_queue.add(t)
    
 @prevent_transient_error     
 def enqueue_renderer_info(product_key_name,count,frequency,date,
                                         countdown = 0,retries = 0):
 
-    t = taskqueue.Task(url='/taskworker/rendererinfo/', 
-                       countdown = countdown,
-                       params={'product_key_name': product_key_name,
-                                'count':count,
-                                'date_string':str(date),
-                                'frequency': frequency,
-                                'retries' : retries,})
-    productinfo_queue.add(t)
+  t = taskqueue.Task(url='/taskworker/rendererinfo/', 
+                     countdown = countdown,
+                     params={'product_key_name': product_key_name,
+                              'count':count,
+                              'date_string':str(date),
+                              'frequency': frequency,
+                              'retries' : retries,})
+  productinfo_queue.add(t)
       
     

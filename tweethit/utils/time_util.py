@@ -2,12 +2,17 @@ import time
 import datetime
 
 def str_to_date(string):
-  year,month,day = map(int,string.split('-'))
-  return datetime.date(year,month,day)
+  if len(string):
+    year,month,day = map(int,string.split('-'))
+    return datetime.date(year,month,day)
 
 def gmt_today():
     gmt  = time.gmtime()
     return datetime.date(gmt[0],gmt[1],gmt[2])
+  
+def gmt_yesterday():
+    timedelta = datetime.timedelta(days = 1)
+    return gmt_today()-timedelta
 
 def gmt_now():
     gmt  = time.gmtime()
