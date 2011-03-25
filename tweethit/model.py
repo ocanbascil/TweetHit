@@ -49,8 +49,12 @@ class FrequencyBase(pdb.Model):
     return cls._default_delimiter.join(key_arr)
   
   @classmethod
-  def new(cls,key_root,frequency,date,**kwds):
-    key_name = cls.build_key_name(key_root, frequency, date)
+  def new(cls,key_root,frequency,date,_build_key_name=True,**kwds):
+    if _build_key_name:
+      key_name = cls.build_key_name(key_root, frequency, date)
+    else:
+      key_name = key_root
+      
     entity = cls(key_name=key_name,**kwds)
     
     if frequency == DAILY:

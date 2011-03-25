@@ -168,14 +168,15 @@ class CounterWorker(helipad.Handler):
         key_name = db.Key(key).name()
         store_key = Store.key_from_product_url(key_name)
         product_counters[key] = ProductCounter.new(key_name, DAILY, today,
-                                                   count=delta,store = store_key)
+                                                   count=delta,store = store_key,_build_key_name = False)
 
     for key,delta in user_targets.iteritems():  
       try:
         user_counters[key].count += delta
       except AttributeError: #Value is None in dict
         key_name = db.Key(key).name()
-        user_counters[key] = UserCounter.new(key_name, DAILY, today,count=delta)
+        user_counters[key] = UserCounter.new(key_name, DAILY, today,
+                                             count=delta,_build_key_name = False)
                 
     ProductCounter.filtered_update(product_counters.values())
     UserCounter.filtered_update(user_counters.values())
