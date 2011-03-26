@@ -190,10 +190,15 @@ class ProductRendererUpdater(helipad.Handler):
         renderer.count = counter.count
         renderers.append(renderer)
       except AttributeError: #Renderer is none
-        enqueue_renderer_info(counter.key_root, 
-                                      counter.count,
-                                      frequency,
-                                      date)
+        renderer = ProductRenderer.build(counter.key().name(), 
+                                         frequency, date,count = counter.count)
+        if renderer is not None: #building from existing renderers successful
+          renderers.append(renderer)
+        else:
+          enqueue_renderer_info(counter.key_root, 
+                                        counter.count,
+                                        frequency,
+                                        date)
     if len(renderers):
       pdb.put(renderers, _storage=[MEMCACHE,DATASTORE])
 

@@ -197,6 +197,19 @@ class ProductRenderer(StoreFrequencyBase):
   Do not do any logic operations using this class
   This is used for creating views only
   '''
+  @classmethod
+  def build(cls,product_key_name,frequency, date,*args,**kwds):
+    frequency_set = [DAILY,MONTHLY,WEEKLY].remove(frequency)
+    for fq in frequency_set:
+      key_name = cls.build_key_name(product_key_name, fq, date)
+      renderer = cls.get_by_key_name(key_name)
+      if renderer is not None:
+        break
+      
+    if renderer:
+      key_name = cls.build_key_name(product_key_name, frequency, date)
+      return renderer.clone_entity(key_name=key_name,count=kwds.get('count'))
+
     
   @classmethod
   def new(cls,*args,**kwds):
