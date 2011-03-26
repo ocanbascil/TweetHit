@@ -42,7 +42,6 @@ class AmazonProductFetcher(object):
     while True:
       try:
         product_node = api.item_lookup(id=asin)  #title,product group
-        price_node = api.item_lookup(id=asin, ResponseGroup='OfferSummary', Condition='New', MerchantId='All') #lowestnewprice(formattedprice))
         image_node = api.item_lookup(id=asin, ResponseGroup='Images') #Images
         break
       except amazonproduct.TooManyRequests:
@@ -63,23 +62,7 @@ class AmazonProductFetcher(object):
       return #Early quit
         
     product_group = product_node.find('productgroup').string.encode('utf-8')
-    
-    try: #If item is unavailable this will raise AttributeError
-      val = price_node.find('lowestnewprice').find('formattedprice').string.encode('utf-8')
-      if val == "Too low to display":
-        price = None
-      else:
-        price = val
-    except AttributeError:
-      try:#Try to get used price
-        val = price_node.find('lowestusedprice').find('formattedprice').string.encode('utf-8')
-        if val == "Too low to display":
-          price = None
-        else:
-          price = val
-      except AttributeError: #No price listings found
-          price = None
-    
+
     try:
       image_small =  str(image_node.find('smallimage').find('url').string)
       image_medium=  str(image_node.find('mediumimage').find('url').string)
@@ -91,8 +74,6 @@ class AmazonProductFetcher(object):
         
     product_renderer.title =  unicode(title,'utf-8') #For urls with funky characters
     product_renderer.product_group = unicode(product_group,'utf-8')
-    if price is not None:
-      product_renderer.price = unicode(price,'utf-8')
     product_renderer.image_small = image_small
     product_renderer.image_medium = image_medium
     product_renderer.image_large = image_large

@@ -250,10 +250,8 @@ class ProductRenderer(StoreFrequencyBase):
   image_small = db.LinkProperty(indexed=False)
   image_medium = db.LinkProperty(indexed=False)
   image_large = db.LinkProperty(indexed=False)
-  price = db.StringProperty(indexed=False) #price + currency representation
   product_group = db.StringProperty(indexed=False)
   title = db.StringProperty(indexed=False)
-  rating = db.FloatProperty(indexed = False,default = 0.0)
   
   #ProductCounter
   count = db.IntegerProperty(default = 0)
