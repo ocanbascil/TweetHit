@@ -15,11 +15,7 @@ cron:
 - description: minute top rating
   url: /cron/rating/minute/
   schedule: every 10 minutes synchronized
-  
-- description: hourly ranking
-  url: /cron/rating/hour/
-  schedule: every 1 hours synchronized
-  
+    
 - description: daily cleanup
   url: /cron/cleanup/day/
   schedule: every day 00:01
@@ -31,7 +27,3 @@ cron:
 - description: monthly cleanup
   url: /cron/cleanup/month/
   schedule: 1 of month 00:01
-  
-- description: yearly ranking
-  url: /cron/rating/year/
-  schedule: 1 of jan 00:02

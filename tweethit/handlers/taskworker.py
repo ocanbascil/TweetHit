@@ -7,7 +7,7 @@ from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
 DICT,KEY_NAME_DICT,pdb
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
-ProductCounter,UserCounter,ProductRenderer
+ProductCounter,UserCounter,ProductRenderer,TwitterUser
 
 from tweethit.query import get_counter_query_for_frequency,\
 get_renderer_query_for_frequency,USER_COUNTER_CLEANUP_TARGETS
@@ -35,8 +35,7 @@ class UrlBucketWorker(helipad.Handler):
                                       _storage = [LOCAL,MEMCACHE],
                                       _result_type = DICT)
     
-    #user_ban_list = TwitterUser.get_banlist() #Ban filter
-    user_ban_list = []
+    user_ban_list = TwitterUser.get_banlist() #Ban filter
     
     fetch_targets = [] #Urls that are not in lookup list
     counter_targets = [] #Product urls that were fetched before

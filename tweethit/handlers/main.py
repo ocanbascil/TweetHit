@@ -16,8 +16,10 @@ from collections import defaultdict
 
 helipad.root('tweethit').template_root('static/templates/')
 
-root_url = 'http://localhost:8000'
-#root_url = 'http://www.tweethit.com'
+if DEBUG_MODE:
+  root_url = 'http://localhost:8000'
+else:
+  root_url = 'http://www.tweethit.com'
 
 def create_day_href(locale,date,day_delta,root):
   date += datetime.timedelta(days = day_delta)

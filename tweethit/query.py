@@ -70,3 +70,4 @@ def get_renderer_query_for_frequency(frequency,date,store_key):
   return query
 
 USER_COUNTER_CLEANUP_TARGETS = GqlQuery('SELECT __key__ FROM UserCounter')
+USER_SPAM_COUNTERS = GqlQuery('SELECT * FROM UserCounter WHERE count >:spam_count_limit AND is_banned = False')

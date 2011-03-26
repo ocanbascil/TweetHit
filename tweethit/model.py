@@ -223,8 +223,43 @@ class ProductRenderer(StoreFrequencyBase):
   
   #ProductCounter
   count = db.IntegerProperty(default = 0)
+  
+  
+class CounterParent(pdb.Model):
+    '''Parent class for Product and TwitterUser'''
+    add_date = db.DateProperty(auto_now_add = True)
 
-
+    _BAN_LIST_CACHE_KEY = None #This should be overridden as string
+    _COUNTER_CLASS = None
+                    
+    @classmethod
+    def update_banlist(cls,key_names):
+        ban_list = cls.get_banlist()
+        
+        for key_name in key_names:
+            if key_name not in ban_list:
+                ban_list.append(key_name)
+            
+        cls.set_banlist(ban_list)
+            
+    @classmethod
+    def get_banlist(cls):
+      ban_list = memcache.get(cls._BAN_LIST_CACHE_KEY)
+      if ban_list is None:
+        ban_list = db.Query(cls, keys_only=True).fetch(10000)
+        cls.set_banlist(ban_list)
+      return ban_list
+    
+    @classmethod
+    def set_banlist(cls,banned_key_names):
+      memcache.set(cls._BAN_LIST_CACHE_KEY,banned_key_names)
+    
+class Product(CounterParent):
+  _BAN_LIST_CACHE_KEY = 'banned_products'
+  
+class TwitterUser(CounterParent): 
+  _BAN_LIST_CACHE_KEY = 'banned_users'
+  
 class Url(pdb.Model):
   '''This model is used for storing shortened - final url tuples
   If final url is a valid Amazon Product page then the url is set as valid
