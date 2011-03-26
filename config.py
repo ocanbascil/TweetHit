@@ -4,7 +4,7 @@ import os
 DEBUG_MODE = True if os.environ.get('SERVER_SOFTWARE').startswith('Devel') else False
 
 '''Counter Write Filters'''
-PRODUCT_COUNTER_MIN_COUNT = 5
+PRODUCT_COUNTER_MIN_COUNT = 1#5
 USER_COUNTER_MIN_COUNT = 15
 
 "Template Limits"

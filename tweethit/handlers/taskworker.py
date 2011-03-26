@@ -183,14 +183,13 @@ class ProductRendererUpdater(helipad.Handler):
     product_renderers = ProductRenderer.get_by_key_name(key_names,
                                                         _storage=[MEMCACHE,DATASTORE],
                                                         _result_type=KEY_NAME_DICT)
-    
     for counter in product_counters:
       renderer = product_renderers[counter.key().name()]
       try:
         renderer.count = counter.count
         renderers.append(renderer)
       except AttributeError: #Renderer is none
-        renderer = ProductRenderer.build(counter.key().name(), 
+        renderer = ProductRenderer.build(counter.key_root, 
                                          frequency, date,count = counter.count)
         if renderer is not None: #building from existing renderers successful
           renderers.append(renderer)

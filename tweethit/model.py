@@ -199,24 +199,45 @@ class ProductRenderer(StoreFrequencyBase):
   '''
   @classmethod
   def build(cls,product_key_name,frequency, date,*args,**kwds):
-    frequency_set = [DAILY,MONTHLY,WEEKLY].remove(frequency)
+    import logging
+    frequency_set = [DAILY,MONTHLY,WEEKLY]
+    frequency_set.remove(frequency)
     for fq in frequency_set:
       key_name = cls.build_key_name(product_key_name, fq, date)
+      logging.info('Trying to get existing renderer with key name: %s' %key_name)
       renderer = cls.get_by_key_name(key_name)
       if renderer is not None:
+        logging.info('Existing renderer found!')
         break
       
     if renderer:
-      key_name = cls.build_key_name(product_key_name, frequency, date)
-      return renderer.clone_entity(key_name=key_name,count=kwds.get('count'))
+      logging.info('Existing renderer found: %s' %product_key_name)
+      return ProductRenderer.new(product_key_name, frequency, 
+                                 date,count=kwds.get('count'),**renderer.clone_properties)
 
-    
   @classmethod
   def new(cls,*args,**kwds):
     entity = super(ProductRenderer, cls).new(*args,**kwds)
     url = AmazonURLParser.product_url(args[0])
     entity.url = url
     return entity
+  
+  @property
+  def clone_properties(self):
+    no_copy = ['day','week','month','year','count']
+    
+    klass = self.__class__
+    props = {}
+        
+    for k,v in klass.properties().iteritems():
+      if isinstance(v, db.ReferenceProperty):
+        props[k] = v.get_value_for_datastore(self)
+      else:
+        props[k] = v.__get__(self,klass)
+
+    for item in no_copy:
+      props.pop(item)
+    return props
   
   #store = db.ReferenceProperty(Store)
   #product = db.ReferenceProperty(Product)
