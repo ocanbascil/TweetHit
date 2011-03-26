@@ -311,15 +311,15 @@ class Url(pdb.Model):
   
   @property
   def asin(self):
-    return self.parser.asin
+    return AmazonURLParser.extract_asin(self.final_url)
   
   @property 
   def product_url(self):
-    return self.parser.product_url
+    return AmazonURLParser.product_url(self.final_url)
     
   @property
   def root_url(self):
-    return self.parser.root_url
+    return AmazonURLParser.root_url(self.final_url)
       
 class Payload(dict):
   '''This class is serialized and passed along taskworkers as message body'''
