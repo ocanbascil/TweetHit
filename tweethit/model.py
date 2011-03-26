@@ -302,13 +302,7 @@ class Url(pdb.Model):
   user_id = db.StringProperty(indexed = False) #Used for creating counter payloads in bucket worker
   is_valid = db.BooleanProperty(default = False) #Has a final url that has been fetched successfully
   is_product = db.BooleanProperty(default = False) #Final url points to a valid Amazon Product page
-  
-  @property
-  def parser(self):
-    if not hasattr(self, '_parser'):
-      self._parser = create_parser(self.final_url)
-    return self._parser
-  
+    
   @property
   def asin(self):
     return AmazonURLParser.extract_asin(self.final_url)

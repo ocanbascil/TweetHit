@@ -341,21 +341,18 @@ class pdb(object):
     '''Wrapper class for db.Model
     Adds cached storage support to common functions'''
     
-    def put(self,_storage = ALL_LEVELS,
-                    _local_expiration = LOCAL_EXPIRATION,
-                    _memcache_expiration = MEMCACHE_EXPIRATION,
-                    **kwds):
+    def put(self,**kwds):
       return pdb.put(self, **kwds)
     
     @classmethod
-    def get(cls,keys,_storage = ALL_LEVELS,**kwds):
+    def get(cls,keys,**kwds):
       return pdb.get(keys,**kwds)
     
     def delete(self,_storage = ALL_LEVELS):
-      pdb.delete(self.key())
+      pdb.delete(self.key(),_storage)
     
     @classmethod
-    def get_by_key_name(cls,key_names, parent=None,_storage = ALL_LEVELS,**kwds):
+    def get_by_key_name(cls,key_names, parent=None,**kwds):
       """Get instance of Model class by its key's name from the given storage layers.
   
       Args:
@@ -377,7 +374,7 @@ class pdb(object):
       return pdb.get(key_strings,**kwds)
     
     @classmethod
-    def get_by_id(cls, ids, parent=None,_storage = ALL_LEVELS,**kwds):
+    def get_by_id(cls, ids, parent=None,**kwds):
       """Get instance of Model class by id from the given storage layers.
   
       Args:
@@ -399,11 +396,7 @@ class pdb(object):
       return pdb.get(key_strings,**kwds)
     
     @classmethod
-    def get_or_insert(cls,key_name,
-                      _storage = ALL_LEVELS,
-                      _local_expiration = LOCAL_EXPIRATION,
-                      _memcache_expiration = MEMCACHE_EXPIRATION,
-                      **kwds):
+    def get_or_insert(cls,key_name,**kwds):
       '''Retrieve or create an instance of Model class using the given storage layers.
       
       Args:
