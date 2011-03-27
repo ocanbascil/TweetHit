@@ -92,7 +92,7 @@ def create_template_data(locale,frequency,date,request,**kwargs):
   group_tuples = []
   keys = sorted(groups.keys())
   for key in keys:
-    group_tuples.append(key,groups[key])
+    group_tuples.append((key,groups[key]))
         
   result_data['date'] = date
   result_data['current_period_flag'] = current_period_flag
