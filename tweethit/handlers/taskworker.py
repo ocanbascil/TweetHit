@@ -31,9 +31,13 @@ class UrlBucketWorker(helipad.Handler):
   def post(self):
     payloads = [Payload(simple_url['url'],simple_url['user_id']) for simple_url in eval(self.request.get('data'))]
     
+    import time
+    
+    start = time.time()
     cached_urls = Url.get_by_key_name([payload.url for payload in payloads],
                                       _storage = [LOCAL,MEMCACHE],
-                                      _result_type = DICT)
+                                      _result_type = KEY_NAME_DICT)
+    logging.info('Got cached urls, took %s seconds' %(time.time()-start))
     
     user_ban_list = TwitterUser.get_banlist() #Ban filter
     
@@ -45,9 +49,8 @@ class UrlBucketWorker(helipad.Handler):
         #Don't take banned users' URLs into account
         continue
             
-      #Look for existing cached instance with same short_url
-      url_key =  str(Key.from_path('Url',payload.url))    
-      cached_url = cached_urls[url_key]
+      #Look for existing cached instance with same short_url    
+      cached_url = cached_urls[payload.url]
       if cached_url is not None:
         if cached_url.is_product: #cached url points to a valid product page
           counter_targets.append(Payload(cached_url.product_url,

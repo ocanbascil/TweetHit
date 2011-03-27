@@ -20,26 +20,6 @@ indexes:
 
 - kind: ProductCounter
   properties:
-  - name: frequency
-  - name: count
-
-- kind: ProductCounter
-  properties:
-  - name: frequency
-  - name: is_banned
-  - name: store
-  - name: count
-    direction: desc
-
-- kind: ProductCounter
-  properties:
-  - name: frequency
-  - name: store
-  - name: count
-    direction: desc
-
-- kind: ProductCounter
-  properties:
   - name: is_banned
   - name: month
   - name: store
@@ -59,37 +39,8 @@ indexes:
 - kind: ProductRenderer
   properties:
   - name: day
-  - name: frequency
   - name: is_banned
   - name: store
-  - name: count
-    direction: desc
-
-- kind: ProductRenderer
-  properties:
-  - name: day
-  - name: is_banned
-  - name: store
-  - name: count
-    direction: desc
-
-- kind: ProductRenderer
-  properties:
-  - name: frequency
-  - name: is_banned
-  - name: month
-  - name: store
-  - name: year
-  - name: count
-    direction: desc
-
-- kind: ProductRenderer
-  properties:
-  - name: frequency
-  - name: is_banned
-  - name: store
-  - name: week
-  - name: year
   - name: count
     direction: desc
 

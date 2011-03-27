@@ -99,7 +99,7 @@ def _cachepy_get(keys):
   '''
   result = {}
   for key in keys:
-    result[key] = deserialize(cachepy.get(key))
+    result[key] = cachepy.get(key)
   return result
 
 
@@ -123,7 +123,7 @@ def _cachepy_put(models,time = 0):
     time = None
   
   for key, model in to_put.iteritems():
-    cachepy.set(key,serialize(model),time)
+    cachepy.set(key,model,time)
   return to_put.keys()
 
 

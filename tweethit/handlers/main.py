@@ -88,11 +88,16 @@ def create_template_data(locale,frequency,date,request,**kwargs):
   
   for item in products:
       groups[item.product_group] += 1
+  
+  group_tuples = []
+  keys = sorted(groups.keys())
+  for key in keys:
+    group_tuples.append(key,groups[key])
         
   result_data['date'] = date
   result_data['current_period_flag'] = current_period_flag
   result_data['products'] = products
-  result_data['groups'] = groups
+  result_data['group_tuples'] = group_tuples
   result_data['assoc_id'] = secret.ASSOCIATE_DICT[locale]
   result_data['root_url'] = root
   result_data['daily_ranking_href'] = root+'/'+locale+'/day/'

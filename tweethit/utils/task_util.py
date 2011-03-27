@@ -35,7 +35,7 @@ def enqueue_counter(payload,countdown = 0):
     
 @prevent_transient_error
 def enqueue_cleanup(model_kind, 
-                    frequency,date,store_key_name = None):
+                    frequency,date,store_key_name = None,countdown = 0):
   
   if model_kind != 'UserCounter':
     if store_key_name:
@@ -45,16 +45,18 @@ def enqueue_cleanup(model_kind,
     
     for root_url in store_group:
       t = taskqueue.Task(url='/taskworker/cleanup/',
-                    params={'model_kind': model_kind,
-                             'frequency':frequency,
-                             'date_string':str(date),
-                             'store_key_name':root_url
-                             })
+                        countdown = countdown, 
+                        params={'model_kind': model_kind,
+                                 'frequency':frequency,
+                                 'date_string':str(date),
+                                 'store_key_name':root_url
+                                 })
       
       cleanup_queue.add(t)
   else:
     t = taskqueue.Task(url='/taskworker/cleanup/',
-              params={'model_kind': model_kind})
+                       countdown = countdown, 
+                       params={'model_kind': model_kind})
     cleanup_queue.add(t)
     
 @prevent_transient_error
@@ -72,6 +74,7 @@ def enqueue_renderer_update(frequency,date,
                                 'frequency':frequency,
                                 'date_string':str(date)})
     fast_queue.add(t)
+    countdown += 20
    
 @prevent_transient_error     
 def enqueue_renderer_info(product_key_name,count,frequency,date,

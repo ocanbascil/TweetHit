@@ -76,8 +76,8 @@
 				<li>
 					<ul id="filters" class="drop">
 					<li><a href="#filter" data-filter="*" class="selected">Show all</a></li>
-					{% for group in groups %}
-					  <li><a href="#filter" data-filter=".{{group.replace(' ','')}}">{{group}} ({{groups[group]}})</a></li>
+					{% for tuple in group_tuples %}
+					  <li><a href="#filter" data-filter=".{{tuple[0].replace(' ','')}}">{{tuple[0]}} ({{tuple[1]}})</a></li>
 					{% endfor %} 
 					</ul>
 				</li>
