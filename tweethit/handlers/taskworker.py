@@ -2,7 +2,11 @@ import helipad
 import logging
 
 from google.appengine.ext.db import Key
-from google.appengine.runtime import DeadlineExceededError
+# DeadlineExceededError can live in two different places 
+try: 
+  from google.appengine.runtime import DeadlineExceededError #Deploy
+except ImportError: 
+  from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
 DICT,KEY_NAME_DICT,pdb
@@ -170,9 +174,8 @@ class ProductRendererUpdater(helipad.Handler):
   '''Create & update product renderers for given parameters
   params:
       - store_key_name : key name for store instance (http://www.amazon.com)
-      - is_ranked : True / False (used for cleanup)
-      - day_delta : This will be zero for today, -1 or else for computing past values
-      - frequency : This will be the frequency property of created renderers 
+      - date_string : String representation of a datetime.date 
+      - frequency : This will be used for building key names for renderers
   '''
   def post(self):
     store_key_name = self.request.get('store_key_name')

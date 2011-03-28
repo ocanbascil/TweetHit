@@ -1,46 +1,24 @@
 # Copyright (C) 2011 O. Can Bascil <ocanbascil at gmail com>
-#
-# This program is release under the BSD License. You can find the full text of
-# the license in the LICENSE file.
 """
 PerformanceEngine
 ==============================
     PerformanceEngine is a simple wrapper module that enables layered 
-    data model storage in Google Application Engine.
+    data model storage in Google Application Engine. Its main goal is to 
+    increase both application and developer performance.
     
     It can store/retrieve models using local cache, memcache or datastore.
     
     You can also retrieve results in different formats (list,key-model dict,
     key_name-model dict)
-    
-    Its main goal is to increase both application and developer performance.
-    
-
-
-    The Product Advertising API provides programmatic access to Amazon's
-    product selection and discovery functionality so that developers like you
-    can advertise Amazon products to monetize your website.
-    
-    The Product Advertising API helps you advertise Amazon products using
-    product search and look up capability, product information and features
-    such as Customer Reviews, Similar Products, Wish Lists and New and Used
-    listings. You can make money using the Product Advertising API to advertise
-    Amazon products in conjunction with the Amazon Associates program. Be sure
-    to join the Amazon Associates program to earn up to 15% in referral fees
-    when the users you refer to Amazon sites buy qualifying products.  
-
 
 Requirements
 ------------
 cachepy => http://appengine-cookbook.appspot.com/recipe/cachepy-faster-than-memcache-and-unlimited-quota/
 
-
 License
 -------
-
 This program is release under the BSD License. You can find the full text of
 the license in the LICENSE file.
-
 """
 from google.appengine.api import memcache
 from google.appengine.ext import db
@@ -88,7 +66,7 @@ def _diff(list1,list2):
   return list(set(list1)-set(list2))
 
 def _to_list(param): 
-    if not type(param).__name__=='list':
+    if not isinstance(param,list):
         result = []
         result.append(param)
     else:
@@ -208,7 +186,7 @@ def _memcache_put(models,time = 0):
   memcache.set_multi(to_put,time)
   return to_put.keys()
 
-def _memcache_delete(keys): #Seconds for lock?
+def _memcache_delete(keys):
   '''Delete models with given keys from memcache'''
   memcache.delete_multi(keys)
   
@@ -218,10 +196,16 @@ class pdb(object):
   
   @classmethod
   def get(cls,keys,_storage = ALL_LEVELS,_result_type=LIST,**kwds):
-    """Fetch the specific Model instance with the given key from given storage layers.
+    """Fetch the specific Model instance with the given keys from 
+    given storage layers in given format. 
+    
+    WARNING: If you try to get different model kinds with the same key
+    names and use KEY_NAME_DICT as result type, you'll lose data as
+    models with same key_names will overwrite each other
   
     Args:
-      _storage: string or array of strings for target storage layers  
+      _storage: string or array of strings for target storage layers.
+      _result_type: format of the result 
       
       Inherited:
         keys: Key within datastore entity collection to find; or string key;
@@ -229,10 +213,15 @@ class pdb(object):
         config: datastore_rpc.Configuration to use for this request.
       
     Returns:
-      If a single key was given: a Model instance associated with key
-      for if it exists in the datastore, otherwise None; if a list of
-      keys was given: a list whose items are either a Model instance or
-      None.
+      if _result_type = LIST:
+        If a single key was given: a Model instance associated with key
+        for if it exists in the datastore, otherwise None; if a list of
+        keys was given: a list whose items are either a Model instance or
+        None.
+      if _result_type = DICT:
+        A key-model dictionary
+      if _result_type = KEY_NAME_DICT
+        A key_name-model dictionary / str(id)-model dictionary
     """
     _storage = _to_list(_storage)
     validate_storage(_storage)
@@ -284,7 +273,7 @@ class pdb(object):
                        **kwds):
     '''Saves models into given storage layers and returns their keys
     
-    If the models are written for the first time and they have no keys ,
+    If the models are written for the first time and they have no key names ,
     They are first written into datastore and then saved to other storage layers
     using the keys returned by datastore put() operation.
     
@@ -295,15 +284,15 @@ class pdb(object):
       _memcache_expiration: Time in seconds for memcache expiration for models
     
       Inherited:
-          models: Model instance or list of Model instances.
-          config: datastore_rpc.Configuration to use for this request.
+        models: Model instance or list of Model instances.
+        config: datastore_rpc.Configuration to use for this request.
     
     Returns:
       A Key or a list of Keys (corresponding to the argument's plurality).
     
     Raises:
-      IdentifierNotFoundError if models with no valid identifiers 
-      are written into cache storage only
+      IdentifierNotFoundError if models has no key names 
+      and are being written into cache storage only.
     
       Inherited:
         TransactionFailedError if the data could not be committed.
@@ -348,7 +337,6 @@ class pdb(object):
       Inherited:
         models: Model instance, key, key string or iterable thereof.
         config: datastore_rpc.Configuration to use for this request.
-  
     """
     keys = map(key_str, _to_list(keys))
     _storage = _to_list(_storage)
@@ -369,13 +357,77 @@ class pdb(object):
     Adds cached storage support to common functions'''
     
     def put(self,**kwds):
+      """Writes this model instance to the given storage layers.
+  
+      Args:
+         _storage: string or array of strings for target storage layers  
+        _local_expiration: Time in seconds for local cache expiration for models
+        _memcache_expiration: Time in seconds for memcache expiration for models       
+        
+        Inherited:
+          config: datastore_rpc.Configuration to use for this request.
+  
+      Returns:
+        The key of the instance (either the existing key or a new key).
+  
+      Raises:
+        IdentifierNotFoundError if model has no key_name and being
+          written into cache storage only.       
+        
+        Inherited:
+          TransactionFailedError if the data could not be committed.
+      """
       return pdb.put(self, **kwds)
     
     @classmethod
     def get(cls,keys,**kwds):
-      return pdb.get(keys,**kwds)
+      '''Fetch a specific Model type instance from given storage 
+      layers, using keys.
+         
+      Args: 
+        _storage: string or array of strings for target storage layers.
+        _result_type: format of the result 
+        
+        Inherited:
+          keys: Key within datastore entity collection to find; or string key;
+            or list of Keys or string keys.
+          config: datastore_rpc.Configuration to use for this request.
+  
+      Returns:
+        if _result_type = LIST:
+          If a single key was given: a Model instance associated with key
+          for if it exists in the datastore, otherwise None; if a list of
+          keys was given: a list whose items are either a Model instance or
+          None.
+        if _result_type = DICT:
+          A key-model dictionary
+        if _result_type = KEY_NAME_DICT
+          A key_name-model dictionary / str(id)-model dictionary
+  
+      Raises:
+        KindError if any of the retrieved objects are not instances of the
+        type associated with call to 'get'.
+      '''
+      models = pdb.get(keys,**kwds)
+      
+      #Class kind check
+      temp = models
+      if isinstance(temp,dict):
+        temp = dict.values()
+      elif isinstance(temp, db.Model):
+        temp = [temp]
+      for instance in temp:
+        if not(instance is None or isinstance(instance, cls)):
+          raise db.KindError('Kind %r is not a subclass of kind %r' %
+                          (instance.kind(), cls.kind())) 
+      return models
     
     def delete(self,_storage = ALL_LEVELS):
+      """Delete current instance from given storage layers
+    
+      Args:
+        _storage: string or array of strings for target storage layers
+      """
       pdb.delete(self.key(),_storage)
     
     @classmethod
@@ -384,6 +436,7 @@ class pdb(object):
   
       Args:
         _storage: string or array of strings for target storage layers
+        _result_type: format of the result 
         
         Inherited:
           key_names: A single key-name or a list of key-names.
@@ -406,6 +459,7 @@ class pdb(object):
   
       Args:
          _storage: string or array of strings for target storage layers
+         _result_type: format of the result 
          
         Inherited:
           ids: A single id or a list of ids.
@@ -489,7 +543,8 @@ class pdb(object):
         logging.info('%s : %s' %(k,v.get_value_for_datastore(self)))  
   
   class GqlQuery(db.GqlQuery):
-      pass
+    '''Cached query results coming soon'''
+    pass
 
 
 class ResultTypeError(Exception):
