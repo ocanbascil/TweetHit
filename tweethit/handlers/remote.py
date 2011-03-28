@@ -31,7 +31,7 @@ class DeleteKeyHandler(helipad.Handler):
   def get(self,model_name,key_name):
     if model_name == 'memcache':
       if memcache.delete(key_name):
-        self.response.out.write('% with key name %s deleted from memcache')
+        self.response.out.write('Record with key name %s deleted from memcache'%key_name)
         
     else:
       key = db.Key.from_path(model_name,key_name)

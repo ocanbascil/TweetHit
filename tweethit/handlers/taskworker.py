@@ -7,7 +7,7 @@ from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
 DICT,KEY_NAME_DICT,pdb
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
-ProductCounter,UserCounter,ProductRenderer,TwitterUser
+ProductCounter,UserCounter,ProductRenderer,TwitterUser,Product
 
 from tweethit.query import get_counter_query_for_frequency,\
 get_renderer_query_for_frequency,USER_COUNTER_CLEANUP_TARGETS
@@ -70,8 +70,7 @@ class UrlFetchWorker(helipad.Handler):
   def post(self):
       
     fetch_targets = Payload.deserialize(self.request.get('payload'))
-    #product_ban_list = Product.get_banlist()
-    product_ban_list = []
+    product_ban_list = Product.get_banlist()
     
     rpcs = []
     result_urls = []
