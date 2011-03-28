@@ -1,19 +1,59 @@
+# Copyright (C) 2011 O. Can Bascil <ocanbascil at gmail com>
+#
+# This program is release under the BSD License. You can find the full text of
+# the license in the LICENSE file.
+"""
+PerformanceEngine
+==============================
+    PerformanceEngine is a simple wrapper module that enables layered 
+    data model storage in Google Application Engine.
+    
+    It can store/retrieve models using local cache, memcache or datastore.
+    
+    You can also retrieve results in different formats (list,key-model dict,
+    key_name-model dict)
+    
+    Its main goal is to increase both application and developer performance.
+    
+
+
+    The Product Advertising API provides programmatic access to Amazon's
+    product selection and discovery functionality so that developers like you
+    can advertise Amazon products to monetize your website.
+    
+    The Product Advertising API helps you advertise Amazon products using
+    product search and look up capability, product information and features
+    such as Customer Reviews, Similar Products, Wish Lists and New and Used
+    listings. You can make money using the Product Advertising API to advertise
+    Amazon products in conjunction with the Amazon Associates program. Be sure
+    to join the Amazon Associates program to earn up to 15% in referral fees
+    when the users you refer to Amazon sites buy qualifying products.  
+
+
+Requirements
+------------
+cachepy => http://appengine-cookbook.appspot.com/recipe/cachepy-faster-than-memcache-and-unlimited-quota/
+
+
+License
+-------
+
+This program is release under the BSD License. You can find the full text of
+the license in the LICENSE file.
+
+"""
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.api import datastore
 from google.appengine.datastore import entity_pb
-from google.appengine.ext import deferred
 
 import cachepy
 import logging
-
-DEFAULT_NAMESPACE = 'default_namespace'
 
 '''Constants for storage levels'''
 DATASTORE = 'datastore'
 MEMCACHE = 'memcache'
 LOCAL = 'local'
-
 ALL_LEVELS = [DATASTORE,MEMCACHE,LOCAL]
 
 '''Constants for result types'''
@@ -24,11 +64,12 @@ KEY_NAME_DICT = 'key_name_dict'
 LOCAL_EXPIRATION = 0
 MEMCACHE_EXPIRATION = 0
 
+none_filter  = lambda dict : [k for k,v in dict.iteritems() if v is None]
+
 def validate_storage(storage_list):
   for storage in storage_list:
     if storage not in ALL_LEVELS:
       raise StorageLayerError(storage)
-
 
 def key_str(param):
   '''Utility function that extracts a string key from a model or key instance'''
@@ -46,7 +87,6 @@ def _diff(list1,list2):
   Used for layered model retrieval'''
   return list(set(list1)-set(list2))
 
-
 def _to_list(param): 
     if not type(param).__name__=='list':
         result = []
@@ -55,14 +95,12 @@ def _to_list(param):
         result = list(param)
     return result
 
-
 def _to_dict(models):
   '''Utility method to create identifier:model dictionary'''
   result = {}
   for model in models:
     result[key_str(model)] = model
   return result
-
 
 def serialize(models):
   '''Improve memcache performance converting to protobuf'''
@@ -75,7 +113,6 @@ def serialize(models):
     # A list
     return [db.model_to_protobuf(x).Encode() for x in models]
 
-
 def deserialize(data):
   '''Improve memcache performance by converting from protobuf'''
   if data is None:
@@ -86,12 +123,11 @@ def deserialize(data):
   else:
     return [db.model_from_protobuf(entity_pb.EntityProto(x)) for x in data]
 
-
 def _cachepy_get(keys):
   '''Get items with given keys from local cache
   
   Args:
-    keys: List of db.Keys or string representation of db.Keys
+    keys: String representation of db.Keys
   
   Returns:
     Dictionary of key,model pairs in which keys are 
@@ -101,7 +137,6 @@ def _cachepy_get(keys):
   for key in keys:
     result[key] = cachepy.get(key)
   return result
-
 
 def _cachepy_put(models,time = 0):
   '''Put given models to local cache in serialized form
@@ -126,18 +161,16 @@ def _cachepy_put(models,time = 0):
     cachepy.set(key,model,time)
   return to_put.keys()
 
-
 def _cachepy_delete(keys):
   '''Delete models with given keys from local cache'''
   for key in keys: 
       cachepy.delete(key)
 
-
 def _memcache_get(keys):
   '''Get items with given keys from memcache
   
   Args:
-    keys: List of db.Keys or string representation of db.Keys
+    keys: List of string representation of db.Keys
   
   Returns:
     Dictionary of key,model pairs in which keys are 
@@ -154,7 +187,6 @@ def _memcache_get(keys):
     except KeyError:
       result[key] = None
   return result
-    
     
 def _memcache_put(models,time = 0):
   '''Put given models to memcache in serialized form
@@ -175,7 +207,6 @@ def _memcache_put(models,time = 0):
           
   memcache.set_multi(to_put,time)
   return to_put.keys()
-
 
 def _memcache_delete(keys): #Seconds for lock?
   '''Delete models with given keys from memcache'''
@@ -203,8 +234,6 @@ class pdb(object):
       keys was given: a list whose items are either a Model instance or
       None.
     """
-    none_filter  = lambda dict : [k for k,v in dict.iteritems() if v is None]
-    
     _storage = _to_list(_storage)
     validate_storage(_storage)
     
@@ -247,7 +276,7 @@ class pdb(object):
     else:
       raise ResultTypeError(_result_type)
         
-        
+
   @classmethod
   def put(cls,models,_storage = ALL_LEVELS,
                       _local_expiration = LOCAL_EXPIRATION,
@@ -320,8 +349,6 @@ class pdb(object):
         models: Model instance, key, key string or iterable thereof.
         config: datastore_rpc.Configuration to use for this request.
   
-    Raises:
-      TransactionFailedError if the data could not be committed.
     """
     keys = map(key_str, _to_list(keys))
     _storage = _to_list(_storage)
@@ -469,7 +496,7 @@ class ResultTypeError(Exception):
   def __init__(self,type):
     self.type = type
   def __str__(self):
-    return  'Result type is invalid: %s. Valid values are "list" and "dict"' %self.type
+    return  'Result type is invalid: %s. Valid values are "list" and "dict" and "key_name dict"' %self.type
  
 class StorageLayerError(Exception):
   def __init__(self,storage):

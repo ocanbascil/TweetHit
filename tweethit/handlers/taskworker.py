@@ -2,6 +2,7 @@ import helipad
 import logging
 
 from google.appengine.ext.db import Key
+from google.appengine.runtime import DeadlineExceededError
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
 DICT,KEY_NAME_DICT,pdb
@@ -79,12 +80,17 @@ class UrlFetchWorker(helipad.Handler):
     for target in fetch_targets:
       fetcher = UrlFetcher()
       rpcs.append(fetcher.prepare_urlfetch_rpc(Url(key_name = target.url,user_id = target.user_id)))
-
-    for item in rpcs:
-      rpc = item[0]
-      rpc.wait()
-      url = item[1]
-      result_urls.append(url)
+    
+    try:
+      for item in rpcs:
+        rpc = item[0]
+        rpc.wait()
+        url = item[1]
+        result_urls.append(url)
+    except DeadlineExceededError:
+      for url in result_urls:
+        fetch_targets.remove(url.key().name())
+      logging.error('Problem retrieveing urls: %s' %fetch_targets)
                 
     for url in result_urls:
       if not url.is_valid:
