@@ -136,7 +136,7 @@ class CounterWorker(helipad.Handler):
       user_targets[user_key] += 1
         
     product_counters = ProductCounter.get_by_key_name(product_targets.keys(),
-                                                      _storage = MEMCACHE,
+                                                      _storage = [MEMCACHE,DATASTORE],
                                                       _result_type=KEY_NAME_DICT)
     user_counters = UserCounter.get_by_key_name(user_targets.keys(),
                                                 _result_type=KEY_NAME_DICT)
