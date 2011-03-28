@@ -29,21 +29,20 @@ class UrlBucketWorker(helipad.Handler):
   not fetched => prepare fetch payload
   '''
   def post(self):
+    import time
+    start = time.time()
     payloads = [Payload(simple_url['url'],simple_url['user_id']) for simple_url in eval(self.request.get('data'))]
     
-    import time
-    
-    start = time.time()
     cached_urls = Url.get_by_key_name([payload.url for payload in payloads],
                                       _storage = [LOCAL,MEMCACHE],
                                       _result_type = KEY_NAME_DICT)
-    logging.info('Got cached urls, took %s seconds' %(time.time()-start))
     
     user_ban_list = TwitterUser.get_banlist() #Ban filter
     
     fetch_targets = [] #Urls that are not in lookup list
     counter_targets = [] #Product urls that were fetched before
     
+
     for payload in payloads:
       if payload.user_id in user_ban_list:
         #Don't take banned users' URLs into account
@@ -57,6 +56,7 @@ class UrlBucketWorker(helipad.Handler):
                                                       payload.user_id))
       else:
         fetch_targets.append(payload)                                 
+    
 
     if len(fetch_targets):
       urlfetch_payload = Payload.serialize(fetch_targets)
@@ -64,6 +64,8 @@ class UrlBucketWorker(helipad.Handler):
     if len(counter_targets):
       counter_payload = Payload.serialize(counter_targets)
       enqueue_counter(counter_payload)
+      
+    logging.info('bucket worker took %s seconds' %(time.time()-start))
                                             
 class UrlFetchWorker(helipad.Handler):
   '''Fetches all unprocessed URL headers to see if they 

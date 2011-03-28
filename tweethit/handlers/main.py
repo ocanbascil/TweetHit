@@ -88,6 +88,8 @@ def create_template_data(locale,frequency,date,request,**kwargs):
   
   for item in products:
       groups[item.product_group] += 1
+      if len(item.title) > 72:
+        item.title = item.title[:72]+'...'
   
   group_tuples = []
   keys = sorted(groups.keys())

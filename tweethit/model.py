@@ -199,19 +199,14 @@ class ProductRenderer(StoreFrequencyBase):
   '''
   @classmethod
   def build(cls,product_key_name,frequency, date,*args,**kwds):
-    import logging
     frequency_set = [DAILY,MONTHLY,WEEKLY]
     frequency_set.remove(frequency)
     for fq in frequency_set:
       key_name = cls.build_key_name(product_key_name, fq, date)
-      logging.info('Trying to get existing renderer with key name: %s' %key_name)
       renderer = cls.get_by_key_name(key_name)
       if renderer is not None:
-        logging.info('Existing renderer found!')
         break
-      
     if renderer:
-      logging.info('Existing renderer found: %s' %product_key_name)
       return ProductRenderer.new(product_key_name, frequency, 
                                  date,count=kwds.get('count'),**renderer.clone_properties)
 

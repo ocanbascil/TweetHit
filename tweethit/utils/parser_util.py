@@ -14,15 +14,19 @@ class UrlParser(object):
   ROOT_URL_SET = []
   
   @classmethod
-  def root_url(cls,url):
+  def is_valid(cls,url):
     for item in cls.ROOT_URL_SET:
-      index = url.find(item)
-      if index != -1:
-        #find url ending slash, 7 = len(http://)
-        end_slash_index = url.find('/',7)
-        if end_slash_index > 0:
-          url = url[:end_slash_index]
-        return url
+      if url.find(item,0,30):
+        return True
+    return False
+    
+  @classmethod
+  def root_url(cls,url):
+    if cls.is_valid(url):
+      end_slash_index = url.find('/',7)
+      if end_slash_index > 0:
+        url = url[:end_slash_index]
+      return url
     raise ParserException(ParserException.NO_PARSER_IMPLEMENTED+' :'+url)
    
   @classmethod
