@@ -273,7 +273,7 @@ class CounterParent(pdb.Model):
     def get_banlist(cls):
       ban_list = memcache.get(cls._BAN_LIST_CACHE_KEY)
       if ban_list is None:
-        ban_list = db.Query(cls, keys_only=True).fetch(10000)
+        ban_list = db.Query(cls, keys_only=True).order("-add_date").fetch(1000)
         ban_list = [key.name() for key in ban_list]
         cls.set_banlist(ban_list)
       return ban_list
