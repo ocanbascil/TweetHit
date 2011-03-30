@@ -1,13 +1,5 @@
 import re
 #http://www.amazon.co.jp/gp/product/images/B000WIUT42/ref=dp_image_0 no prefix?!?  
-def create_parser(url):
-    if url is None:
-        raise ParserException(ParserException.EMPTY_URL)
-    for key in AmazonTweetParser.ROOT_URL_SET:
-        if url.find(key) != -1:
-            return AmazonTweetParser(url)
-    else:
-        raise ParserException(ParserException.NO_PARSER_IMPLEMENTED+' :'+url)
    
 class UrlParser(object):
   

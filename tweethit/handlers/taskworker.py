@@ -9,7 +9,7 @@ except ImportError:
   from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
-DICT,KEY_NAME_DICT,pdb
+DICT,NAME_DICT,pdb
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
 ProductCounter,UserCounter,ProductRenderer,TwitterUser,Product
@@ -38,7 +38,7 @@ class UrlBucketWorker(helipad.Handler):
     
     cached_urls = Url.get_by_key_name([payload.url for payload in payloads],
                                       _storage = [LOCAL,MEMCACHE],
-                                      _result_type = KEY_NAME_DICT)
+                                      _result_type = NAME_DICT)
     
     user_ban_list = TwitterUser.get_banlist() #Ban filter
     fetch_targets = [] #Urls that are not in lookup list
@@ -147,9 +147,9 @@ class CounterWorker(helipad.Handler):
         
     product_counters = ProductCounter.get_by_key_name(product_targets.keys(),
                                                       _storage = [MEMCACHE,DATASTORE],
-                                                      _result_type=KEY_NAME_DICT)
+                                                      _result_type=NAME_DICT)
     user_counters = UserCounter.get_by_key_name(user_targets.keys(),
-                                                _result_type=KEY_NAME_DICT)
+                                                _result_type=NAME_DICT)
         
     for key_name,delta in product_targets.iteritems():
       try:
@@ -190,7 +190,7 @@ class ProductRendererUpdater(helipad.Handler):
     key_names = [counter.key().name() for counter in product_counters ]
     product_renderers = ProductRenderer.get_by_key_name(key_names,
                                                         _storage=[MEMCACHE,DATASTORE],
-                                                        _result_type=KEY_NAME_DICT)
+                                                        _result_type=NAME_DICT)
     for counter in product_counters:
       renderer = product_renderers[counter.key().name()]
       try:
