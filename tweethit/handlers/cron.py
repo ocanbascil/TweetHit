@@ -5,7 +5,7 @@ from config import *
 from PerformanceEngine import pdb,DATASTORE,MEMCACHE
 
 from tweethit.model import ProductCounter,UserCounter,ProductRenderer,\
-CounterBase,DAILY,WEEKLY,MONTHLY,TwitterUser,Product
+CounterBase,DAILY,WEEKLY,MONTHLY,TwitterUser,Product,Banlist
 
 from tweethit.query import USER_SPAM_COUNTERS,PRODUCT_RENDERER_BAN_TARGETS
 
@@ -70,7 +70,11 @@ class ProductBanSynch(helipad.Handler):
                                              month = renderer.month,
                                              year = renderer.year))
       renderer.is_ban_synched = True
-      
+    
+    targets = [product.key().name() for product in products]
+    ban_list = Banlist.retrieve()
+    ban_list.products += targets
+    ban_list.put(_storage=[MEMCACHE,DATASTORE])     
     pdb.put(products+renderers+product_counters,_storage = [MEMCACHE,DATASTORE])
   
 class BanSpammers(helipad.Handler):
@@ -84,7 +88,12 @@ class BanSpammers(helipad.Handler):
       for counter in user_counters:
         counter.is_banned = True
         users.append(TwitterUser(key_name = counter.key_root))
-      TwitterUser.update_banlist([user.key().name() for user in users])
+      
+      targets = [user.key().name() for user in users]
+      ban_list = Banlist.retrieve()
+      ban_list.users += targets
+      ban_list.put(_storage=[MEMCACHE,DATASTORE])
+      #TwitterUser.update_banlist([user.key().name() for user in users])
       logging.info('Banning users with keys: %s' %[user.key().name() for user in users])
       pdb.put(user_counters+users)
   

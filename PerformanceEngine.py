@@ -260,7 +260,7 @@ class pdb(object):
     _storage = _to_list(_storage)
     _cache_refresh = _to_list(_cache_refresh)
     validate_storage(_storage)
-    validate_cache_refresh(_cache_refresh,_storage)
+    #validate_cache_refresh(_cache_refresh,_storage)
     
     keys = map(key_str, _to_list(keys))
     old_keys = keys

@@ -2,11 +2,11 @@ cron:
 
 - description: manual product ban synch
   url: /cron/bansynch/
-  schedule: every 5 minutes synchronized
+  schedule: every 10 minutes synchronized
   
 - description: ban spammers
   url: /cron/banspammers/
-  schedule: every 5 minutes synchronized
+  schedule: every 10 minutes synchronized
   
 - description: update counters
   url: /cron/updatecounters/

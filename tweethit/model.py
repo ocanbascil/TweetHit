@@ -2,14 +2,13 @@ from PerformanceEngine import pdb,MEMCACHE,DATASTORE
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
-from tweethit.utils.parser_util import create_parser,AmazonURLParser
+from tweethit.utils.parser_util import AmazonURLParser
 
 import config
 
 DAILY='daily'
 WEEKLY='weekly'
 MONTHLY='monthly'
-
 
 class FrequencyBase(pdb.Model):
   '''Base model including methods for building key names 
@@ -169,6 +168,7 @@ class CounterBase(FrequencyBase):
   @classmethod
   def set_cached_counter_keys(cls,arr):
     memcache.set('counter_keys',arr)
+
     
 class UserCounter(CounterBase):
     '''Counter class that holds the mention counts for a twitter user
@@ -250,43 +250,37 @@ class ProductRenderer(StoreFrequencyBase):
   
   #ProductCounter
   count = db.IntegerProperty(default = 0)
-  
-  
-class CounterParent(pdb.Model):
-    '''Parent class for Product and TwitterUser'''
-    add_date = db.DateProperty(auto_now_add = True)
+   
+class Banlist(pdb.Model):
+  _key_name = 'banlist'
+  products = db.StringListProperty(indexed=False)
+  users = db.StringListProperty(indexed=False)
 
-    _BAN_LIST_CACHE_KEY = None #This should be overridden as string
-    _COUNTER_CLASS = None
-                    
-    @classmethod
-    def update_banlist(cls,key_names):
-        ban_list = cls.get_banlist()
-        
-        for key_name in key_names:
-            if key_name not in ban_list:
-                ban_list.append(key_name)
-            
-        cls.set_banlist(ban_list)
-            
-    @classmethod
-    def get_banlist(cls):
-      ban_list = memcache.get(cls._BAN_LIST_CACHE_KEY)
-      if ban_list is None:
-        ban_list = db.Query(cls, keys_only=True).order("-add_date").fetch(1000)
-        ban_list = [key.name() for key in ban_list]
-        cls.set_banlist(ban_list)
-      return ban_list
+  @classmethod
+  def retrieve(cls,**kwds):
+    entity = cls.get_by_key_name(cls._key_name,**kwds)
+    if entity:
+      print 'FOUND'
+      return entity
     
-    @classmethod
-    def set_banlist(cls,banned_key_names):
-      memcache.set(cls._BAN_LIST_CACHE_KEY,banned_key_names)
+    print 'not found'
+    if kwds.get('_storage'):
+      if DATASTORE in kwds.get('_storage'):
+        print 'INSERTING'
+        #This should only run once
+        products = db.Query(Product, keys_only=True).order("-add_date").fetch(1000)
+        users = db.Query(TwitterUser, keys_only=True).order("-add_date").fetch(1000)
+        products = [key.name() for key in products]
+        users = [key.name() for key in users]
+        entity = cls(key_name=cls._key_name,products = products,users = users)
+        entity.put()
+        return entity
     
-class Product(CounterParent):
-  _BAN_LIST_CACHE_KEY = 'banned_products'
+class Product(pdb.Model):
+  add_date = db.DateProperty(auto_now_add = True)
   
-class TwitterUser(CounterParent): 
-  _BAN_LIST_CACHE_KEY = 'banned_users'
+class TwitterUser(pdb.Model): 
+  add_date = db.DateProperty(auto_now_add = True)
   
 class Url(pdb.Model):
   '''This model is used for storing shortened - final url tuples
