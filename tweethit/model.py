@@ -176,7 +176,7 @@ class UserCounter(CounterBase):
     _MIN_COUNT_FOR_DB_WRITE = config.USER_COUNTER_MIN_COUNT
 
 class StoreFrequencyBase(FrequencyBase):
-  store = db.ReferenceProperty()
+  store = db.ReferenceProperty(Store)
   
   @classmethod
   def new(cls,*args,**kwds):

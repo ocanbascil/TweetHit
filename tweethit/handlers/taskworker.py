@@ -38,11 +38,12 @@ class UrlBucketWorker(helipad.Handler):
     
     cached_urls = Url.get_by_key_name([payload.url for payload in payloads],
                                       _storage = [LOCAL,MEMCACHE],
-                                      _cache_refresh=LOCAL,
+                                      _local_cache_refresh=True,
                                       _result_type = NAME_DICT)
     
     user_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
-                                        _cache_refresh=[LOCAL,MEMCACHE],
+                                        _local_cache_refresh=True,
+                                        _memcache_refresh=True,
                                         _local_expiration=minute_expiration()).users
                                         
     fetch_targets = [] #Urls that are not in lookup list
@@ -75,12 +76,14 @@ class UrlFetchWorker(helipad.Handler):
   are directed to a Amazon Product Page
   
   Then creates mentions for all valid amazon products 
-  and sends them to counter worker'''
+  and sends them to counter worker
+  
+  If anyone reads this, help me prettify this procedure'''
   def post(self):
       
     fetch_targets = Payload.deserialize(self.request.get('payload'))
     product_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
-                                    _cache_refresh=[LOCAL,MEMCACHE],
+                                    _local_cache_refresh=True,
                                     _local_expiration=minute_expiration()).products 
     
     rpcs = []
