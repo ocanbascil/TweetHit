@@ -1,7 +1,10 @@
 import helipad
 from google.appengine.api import taskqueue
 
-from tweethit.utils.time_util import gmt_today,date_to_str_tuple
+from PerformanceEngine import time_util
+
+from tweethit.utils.parser_util import date_to_str_tuple
+from tweethit.utils.task_util import prevent_transient_error
 from tweethit.model import Store,DAILY,WEEKLY,MONTHLY
 from tweethit.query import get_renderer_query_for_frequency
 
@@ -9,8 +12,6 @@ from config import DEBUG_MODE,TEMPLATE_PRODUCT_COUNT
 import secret
 import logging
 
-
-import time
 import datetime
 from collections import defaultdict
 
@@ -38,7 +39,7 @@ def create_month_href(locale,date,month_delta,root):
   
 def create_template_data(locale,frequency,date,request,**kwargs):
     
-  current_date = gmt_today()
+  current_date = time_util.today()
   current_period_flag = False
   query_cache_expiration = 0
   store_key = Store.key_for_locale(locale)
@@ -117,7 +118,7 @@ class RendererException(Exception):
         
 class MainHandler(helipad.Handler):
   def get(self):
-    date = gmt_today()
+    date = time_util.today()
     locale = 'us'
     template_dict = create_template_data(locale, DAILY, date,self.request)
     self.response.headers["Cache-Control"]="public; max-age=300;"
@@ -125,7 +126,7 @@ class MainHandler(helipad.Handler):
              
 class LocaleHandler(helipad.Handler):
   def get(self,locale):
-    date = gmt_today()
+    date = time_util.today()
     self.response.headers["Cache-Control"]="public; max-age=300;"
     template_dict = create_template_data(locale, 'daily', date,self.request)
     return self.template('ranking_daily.html', template_dict)
@@ -157,21 +158,21 @@ class MonthHandler(helipad.Handler):
     
 class CurrentDayHandler(helipad.Handler):
   def get(self,locale):
-    date = gmt_today()
+    date = time_util.today()
     template_dict = create_template_data(locale, 'daily', date,self.request)
     self.response.headers["Cache-Control"]="public; max-age=300;"
     return self.template('ranking_daily.html', template_dict)  
         
 class CurrentWeekHandler(helipad.Handler):
   def get(self,locale):
-    date = gmt_today()
+    date = time_util.today()
     template_dict = create_template_data(locale, 'weekly', date,self.request)
     self.response.headers["Cache-Control"]="public; max-age=300;"
     return self.template('ranking_weekly.html', template_dict)  
         
 class CurrentMonthHandler(helipad.Handler):
   def get(self,locale):        
-    date = gmt_today()
+    date = time_util.today()
     template_dict = create_template_data(locale, 'monthly', date,self.request)
     self.response.headers["Cache-Control"]="public; max-age=300;"
     return self.template('ranking_monthly.html', template_dict)   
@@ -185,16 +186,11 @@ class BucketHandler(helipad.Handler):
     logging.info('Bucket get called')
     self.response.out.write('Bucket get called')
 
+  @prevent_transient_error
   def post(self):
     data = self.request.get('data')
-    timeout_ms = 100
-    while True:      
-      try:
-        taskqueue.add(url='/taskworker/bucket/', params={'data': data})
-        break      
-      except taskqueue.TransientError:
-        time.sleep(timeout_ms)
-        timeout_ms *= 2
+    taskqueue.add(url='/taskworker/bucket/', params={'data': data})
+
 
 class AffiliateRedirectHandler(helipad.Handler):
     pass

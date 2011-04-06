@@ -21,7 +21,7 @@ def main():
                     timeout=None)
 
 
-    track_list = 'amazon,amzn,asin,isbn'
+    track_list = 'amazon,amzn,asin,isbn,book http,game http,deal http,livre http,jeu http,dvd http,spiel http,buch http,faire http'
     track_list = [k for k in track_list.split(',')]
     
     
@@ -30,21 +30,23 @@ def main():
         while True:
             
             if not stream.running:
-                print 'Connection lost, trying to restart'
+                print 'Connection closed, trying to restart'
                 stream.filter(None, track_list,async = True)
             else:
                 print 'Connection alive'
             
-            time.sleep(10)
-            now = time.time()
             
-            print 'Timer: %s' % (now - start_time)
+            time.sleep(10)
+            now = time.time()   
+            print 'Timer: %s' % (now - start_time)        
             
             if now - start_time > 3600:
                 print '1 hour complete, restarting connection'
                 start_time = time.time()
                 stream.disconnect()
                 print 'Stream status: ',stream.running
+                
+
                 
             
                 

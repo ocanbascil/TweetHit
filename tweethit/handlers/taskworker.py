@@ -9,7 +9,7 @@ except ImportError:
   from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
-DICT,NAME_DICT,pdb
+NAME_DICT,pdb,time_util
 
 from tweethit.model import DAILY,WEEKLY,MONTHLY,Url,Payload,\
 ProductCounter,UserCounter,ProductRenderer,Banlist
@@ -17,13 +17,13 @@ ProductCounter,UserCounter,ProductRenderer,Banlist
 from tweethit.query import get_counter_query_for_frequency,\
 get_renderer_query_for_frequency,USER_COUNTER_CLEANUP_TARGETS
 
-from tweethit.utils.parser_util import AmazonURLParser,ParserException
+from tweethit.utils.parser_util import AmazonURLParser,ParserException, \
+str_to_date
 from tweethit.utils.rpc import UrlFetcher,AmazonProductFetcher
 
 from tweethit.utils.task_util import enqueue_cleanup,enqueue_counter, \
 enqueue_url_fetch,enqueue_renderer_info
 
-from tweethit.utils.time_util import gmt_today,str_to_date,minute_expiration
 from config import TEMPLATE_PRODUCT_COUNT,MAX_PRODUCT_INFO_RETRIES
 
 
@@ -44,7 +44,7 @@ class UrlBucketWorker(helipad.Handler):
     user_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
                                         _local_cache_refresh=True,
                                         _memcache_refresh=True,
-                                        _local_expiration=minute_expiration()).users
+                                        _local_expiration=time_util.minute_expiration(minutes=10)).users
                                         
     fetch_targets = [] #Urls that are not in lookup list
     counter_targets = [] #Product urls that were fetched before
@@ -84,7 +84,7 @@ class UrlFetchWorker(helipad.Handler):
     fetch_targets = Payload.deserialize(self.request.get('payload'))
     product_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
                                     _local_cache_refresh=True,
-                                    _local_expiration=minute_expiration()).products 
+                                    _local_expiration=time_util.minute_expiration(minutes=10)).products 
     
     rpcs = []
     result_urls = []
@@ -139,7 +139,7 @@ class CounterWorker(helipad.Handler):
     from collections import defaultdict
     payload_string = self.request.get('payload')
     counter_targets = Payload.deserialize(payload_string)
-    today = gmt_today()
+    today = time_util.today()
     
     product_targets = defaultdict(int)
     user_targets = defaultdict(int)

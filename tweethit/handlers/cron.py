@@ -1,16 +1,19 @@
 import helipad
 import logging
-from config import *
+from datetime import timedelta
 
-from PerformanceEngine import pdb,DATASTORE,MEMCACHE
+from config import SPAM_COUNT_LIMIT
+
+from PerformanceEngine import pdb,DATASTORE,MEMCACHE,time_util
 
 from tweethit.model import ProductCounter,UserCounter,ProductRenderer,\
 CounterBase,DAILY,WEEKLY,MONTHLY,TwitterUser,Product,Banlist
 
 from tweethit.query import USER_SPAM_COUNTERS,PRODUCT_RENDERER_BAN_TARGETS
-
-from tweethit.utils.time_util import midnight_flag,gmt_today,gmt_yesterday
 from tweethit.utils.task_util import enqueue_renderer_update,enqueue_cleanup
+  
+
+yesterday = lambda : time_util.today()-timedelta(days=1)
   
 class CounterUpdate(helipad.Handler):
   '''Retrieves counters from memcache to update DB every 5 mins'''
@@ -33,11 +36,11 @@ class MinuteRating(helipad.Handler):
   Enqueues tasks to get product details from Amazon 
   if they're not listed already'''
   def get(self):
-    enqueue_renderer_update(DAILY,gmt_today())
+    enqueue_renderer_update(DAILY,time_util.today())
       
 class DailyCleanup(helipad.Handler):
   def get(self):
-    date = gmt_yesterday()
+    date = yesterday()
     enqueue_renderer_update(WEEKLY,date)
     enqueue_renderer_update(MONTHLY,date)
     enqueue_cleanup(UserCounter.kind(), DAILY, date)
@@ -46,14 +49,18 @@ class DailyCleanup(helipad.Handler):
     enqueue_cleanup(ProductRenderer.kind(), WEEKLY, date,countdown = 3600)
     enqueue_cleanup(ProductRenderer.kind(), MONTHLY, date,countdown = 3600)
     
+    #Delete banlist so it is refreshed with latest banned entities
+    banlist = Banlist.retrieve()
+    banlist.delete()
+    
 class WeeklyCleanup(helipad.Handler):
   def get(self):
-    date = gmt_yesterday()
+    date = yesterday()
     enqueue_cleanup(ProductCounter.kind(), WEEKLY, date,countdown = 3600)
     
 class MonthlyCleanup(helipad.Handler):
   def get(self):
-    date = gmt_yesterday()
+    date = yesterday()
     enqueue_cleanup(ProductCounter.kind(), MONTHLY, date,countdown = 3600)
     
 class ProductBanSynch(helipad.Handler):

@@ -1,7 +1,7 @@
 # Copyright (C) 2011 O. Can Bascil <ocanbascil at gmail com>
 """
 PerformanceEngine
-v0.8
+v1.0
 https://github.com/ocanbascil/Performance-AppEngine
 ==============================
     PerformanceEngine is a simple wrapper module that enables layered 
@@ -29,6 +29,8 @@ from google.appengine.datastore import entity_pb
 
 import cachepy
 import logging
+
+from datetime import datetime,date
 
 '''Constants for storage levels'''
 DATASTORE = 'datastore'
@@ -542,6 +544,21 @@ class pdb(object):
       else:
         return entity
       
+    def cached_ref(self,reference_name,**kwds):
+      '''This function is a wrapper around db.ReferenceProperty
+      When a reference name is given this function tries to retrieve 
+      the model from given storage layers using the pdb.get function.
+      '''
+      try:
+        property = self.properties()[reference_name]
+      except KeyError:
+        raise ReferenceError(reference_name, ReferenceError.REFERENCE_NAME_ERROR)
+      
+      if not isinstance(property, db.ReferenceProperty):
+        raise ReferenceError(property.__class__.__name__,ReferenceError.TYPE_ERROR)
+      
+      return pdb.get(property.get_value_for_datastore(self),**kwds)
+      
     def cached_set(self,collection_name,index_expiration=300,**kwds):
       '''This function is a wrapper around back-reference functionality of 
       db.ReferenceProperty,allowing cached retrieval of models that reference 
@@ -567,7 +584,7 @@ class pdb(object):
         model.cached_set('ref_set') #Cached back-references
       
       Args:
-        collection_name: Name of the back reference property
+        collection_name: Name of the back reference collection
         index_expiration: Memcache expiration time for _ReferenceCacheIndex
         entity that'll be created for this reference set if there isn't any.
         
@@ -581,7 +598,7 @@ class pdb(object):
       '''
       property = getattr(self, collection_name)
       if not isinstance(property, db.Query):
-        raise ReferenceSetError(collection_name)
+        raise ReferenceError(collection_name,ReferenceError.COLLECTION_NAME_ERROR)
       
       klass = self.__class__
       key_name = str(self.key())+klass._default_delimiter+collection_name
@@ -634,6 +651,9 @@ class pdb(object):
         Create a pdb.GqlQuery instance and bind variables as you like.
         When you do a fetch, indicate if you want cache support with
         this query by supplying cache and expiration parameters. 
+        
+        Default usage with no additional parameters has the same 
+        functionality of a db.GqlQuery.
         
         If no cache match is found and at least one cache layer is supplied,
         after the query is run on datastore the result will be stored in 
@@ -694,14 +714,12 @@ class pdb(object):
       self.query = db.GqlQuery(query_string,*args,**kwds)
       if args or kwds:
         self.bind(*args,**kwds)
-      print self.key_name
             
     def _concat_keyname(self,param):
       klass = self.__class__
       self.key_name += klass.delim+param
       
     def _clear_keyname(self,key=None):
-      print 'Clear Start %s, %s' %(self.key_name,key)
       klass = self.__class__
       if key is not None:
         key_index = self.key_name.find(key)
@@ -714,7 +732,6 @@ class pdb(object):
 
       if delim_index > 0:
         self.key_name = self.key_name[:delim_index]
-      print 'Clear complete %s' %self.key_name
         
     def _create_suffix(self,*args,**kwds):
       for item in args:
@@ -752,7 +769,6 @@ class pdb(object):
       if offset != 0:
         self._concat_keyname('__offset:'+str(offset))
 
-      print 'Fetching with key: %s' %self.key_name
       result = pdb.get(self.key_name,
                             _storage=_cache,
                             _memcache_refresh = False,
@@ -769,6 +785,77 @@ class pdb(object):
         if memcache_flag:
           memcache.set(self.key_name,_serialize(result),_memcache_expiration)
         return self.query.fetch(limit,offset,**kwds)
+        
+class time_util(object):
+  '''This is a utility class for using update periods for cache invalidation
+  
+    Example Usage:
+      Assume that we have 3 models (MinuteModel,HourModel,DayModel)
+      with update frequencies of 10 minutes, 1 hour and 1 day.
+      
+      We want to store and serve them using local cache, so we have to 
+      make sure that their local storage is invalidated after their update
+      frequency time is passed.
+      
+      minute_model = MinuteModel()
+      hour_model = HourModel()
+      day_model = DayModel()
+      
+      #Assume it is 15:23:10 at the time of following operations
+      
+      #Expiration time: 15:30:00 - 15:23:10 = 410 seconds
+      minute_model.put(_storage=['local','datastore'],
+                              _local_expiration = time_util.minute_expiration(minutes=10))
+      
+      #Expiration time: 16:00:00 - 15:23:10 = 2210 seconds
+      hour_model.put(_storage=['local','datastore'],
+                            _local_expiration = time_util.hour_expiration(hours=1))
+      
+      #Expiration time: 00:00:00 - 15:23:10 = 31010 seconds
+      day_model.put(_storage=['local','datastore'],
+                          _local_expiration = time_util.day_expiration(days=1))
+  '''
+  @classmethod
+  def now(cls):
+    return datetime.utcnow()
+  
+  @classmethod
+  def today(cls):
+    now = cls.now()
+    return date(now.year,now.month,now.day)
+  
+  @classmethod
+  def minute_expiration(cls,minutes=10,minute_offset=0):
+    '''Returns seconds left for the next minute period
+    Starting at minute_offset'''
+    now = cls.now()
+    second = now.second
+    minute = now.minute
+    elapsed = (minute % minutes)*60+second
+    return (minutes+minute_offset)*60-elapsed
+  
+  @classmethod
+  def hour_expiration(cls,hours=1,hour_offset=0,minute_offset=0):
+    '''Returns seconds left for the next hour period
+    Starting at hour_offset:minute_offset'''
+    now = cls.now()
+    second = now.second
+    minute = now.minute
+    hour = now.hour
+    elapsed = (hour % hours)*3600+minute*60+second
+    return (hours+hour_offset)*3600+minute_offset*60-elapsed
+    
+  @classmethod
+  def day_expiration(cls,days=1,day_offset=0,hour_offset=0,minute_offset=0):
+    '''Returns seconds left for the next day period
+    Starting at day_offset:hour_offset:minute_offset'''
+    now = cls.now()
+    second = now.second
+    minute = now.minute
+    hour = now.hour
+    day = now.day
+    elapsed = (day % days)*86400+hour*3600+minute*60+second
+    return (days+day_offset)*86400+hour_offset*3600+minute_offset*60-elapsed
     
 class _ReferenceCacheIndex(pdb.Model):
   '''This model is used for accessing the 'many' part of a 
@@ -798,12 +885,17 @@ class ResultTypeError(Exception):
   def __str__(self):
     return  'Result type is invalid: %s. Valid values are "list" and "dict" and "name_dict"' %self.type
   
-class ReferenceSetError(Exception):
-  def __init__(self,type):
-    self.type = type
+class ReferenceError(Exception):
+  COLLECTION_NAME_ERROR = 'Entity does not have a reference set called: '
+  REFERENCE_NAME_ERROR = 'Entity does not have a reference property called: '
+  TYPE_ERROR = 'Expected ReferenceProperty but received: '
+  
+  def __init__(self,param,message):
+    self.param = param
+    self.message = message
   def __str__(self):
-    return  'Entity does not have a reference set called "%s"' %self.type 
-
+    return  self.message+str(self.param)
+  
 class CacheLayerError(Exception):
   def __init__(self,cache):
     self.cache = cache

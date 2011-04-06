@@ -260,13 +260,10 @@ class Banlist(pdb.Model):
   def retrieve(cls,**kwds):
     entity = cls.get_by_key_name(cls._key_name,**kwds)
     if entity:
-      print 'FOUND'
       return entity
     
-    print 'not found'
     if kwds.get('_storage'):
       if DATASTORE in kwds.get('_storage'):
-        print 'INSERTING'
         #This should only run once
         products = db.Query(Product, keys_only=True).order("-add_date").fetch(1000)
         users = db.Query(TwitterUser, keys_only=True).order("-add_date").fetch(1000)

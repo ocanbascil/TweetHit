@@ -33,6 +33,7 @@ class BucketListener(StreamListener):
 
             status.text.encode("utf-8")
             urls = self.extract_urls(status.text)
+            urls = set(urls) #Eliminate duplicates
             
             for url in urls:
                 simple_url = SimpleUrl(url,status.author)
@@ -69,7 +70,7 @@ class BucketListener(StreamListener):
         url = 'http://tweethitapp.appspot.com/task/'
         values = {'data' : str}
 
-        print "posting to url: %s" %url          
+        print "posting to url: %s" %url
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
         response = urllib2.urlopen(req)
