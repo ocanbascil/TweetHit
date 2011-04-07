@@ -5,6 +5,7 @@ from datetime import timedelta
 from config import SPAM_COUNT_LIMIT
 
 from PerformanceEngine import pdb,DATASTORE,MEMCACHE,time_util
+from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 from tweethit.model import ProductCounter,UserCounter,ProductRenderer,\
 CounterBase,DAILY,WEEKLY,MONTHLY,TwitterUser,Product,Banlist
@@ -22,12 +23,15 @@ class CounterUpdate(helipad.Handler):
     if not len(counter_keys):
       return
     logging.info('Counter keys retrieved: %s' %len(counter_keys))
-    #Delete cached counter keys
-    CounterBase.set_cached_counter_keys([])
     counters = CounterBase.get(counter_keys,_storage=MEMCACHE)    
     if len(counters):
-      logging.info('Counters being inserted: %s' %len(counters))
-      pdb.put(counters, _storage=DATASTORE)
+      try:
+        logging.info('Counters being inserted: %s' %len(counters))
+        pdb.put(counters, _storage=DATASTORE)
+        #Delete cached counter keys
+        CounterBase.set_cached_counter_keys([])
+      except CapabilityDisabledError:
+        pass
     
 class MinuteRating(helipad.Handler):
   '''Fetches  top product counters

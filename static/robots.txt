@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: /cron/
 Disallow: /taskworker/
+Disallow: /task/
 Disallow: /remote/

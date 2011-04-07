@@ -68,7 +68,7 @@ body {
 #locale_container ul
 {
 	position:absolute;
-    top: 10%;
+    top: 65px;
     left: 50%;
 	list-style-type: none;
 }
@@ -312,14 +312,13 @@ body {
 }
 
 .element .image {
-  left: 12%;
-  top: 15%;
+  left: 13%;
+  top: 10%;
 }
 
 .element .title {
-  left: 23%;
+  left: 30%;
   top: 38%;
-  width: 63%;
   font-size: 1.6em;
 }
 
@@ -327,12 +326,8 @@ body {
   left: 2%;
   top: 40%;
   font-size: 2.3em;
-}
-
-.element .price {
-  right: 2%;
-  top: 40%;
-  font-size: 1.2em;
+  width: 10%;
+  text-align: center;
 }
 
 .clickable .element:hover {

@@ -329,3 +329,6 @@ class Payload(dict):
         result.append(Payload(item['url'],
                               item['user_id']))
     return result
+  
+class Response(pdb.Model):
+  content = db.TextProperty()

@@ -122,6 +122,8 @@ class MainHandler(helipad.Handler):
     locale = 'us'
     template_dict = create_template_data(locale, DAILY, date,self.request)
     self.response.headers["Cache-Control"]="public; max-age=300;"
+    #template = self.template('ranking_daily.html', template_dict)  
+    #logging.info(self.response.out.read())
     return self.template('ranking_daily.html', template_dict)  
              
 class LocaleHandler(helipad.Handler):

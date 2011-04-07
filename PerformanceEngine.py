@@ -25,7 +25,10 @@ the license in the LICENSE file.
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.api import datastore
+from google.appengine.ext import deferred
 from google.appengine.datastore import entity_pb
+from google.appengine.runtime import DeadlineExceededError
+from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 import cachepy
 import logging
@@ -152,7 +155,7 @@ def _cachepy_put(models,time = 0):
   
   for key, model in to_put.iteritems():
     cachepy.set(key,model,time)
-  return to_put.keys()
+  return [model.key() for model in models]
 
 def _cachepy_delete(keys):
   '''Delete models with given keys from local cache'''
@@ -187,11 +190,39 @@ def _memcache_put(models,time = 0):
       to_put[key] = _serialize(model)
           
   memcache.set_multi(to_put,time)
-  return to_put.keys()
+  return [model.key() for model in models]
 
 def _memcache_delete(keys):
   '''Delete models with given keys from memcache'''
   memcache.delete_multi(keys)
+  
+def _put(models,countdown=0):
+  batch_size = 50
+  to_put = []
+  keys = []
+  try:
+    last_index = 0
+    for i,model in enumerate(models):
+      to_put.append(model)
+      last_index = i
+      if (i+1) % batch_size == 0:
+        keys.extend(db.put(to_put))
+        to_put = []
+    keys.extend(db.put(to_put))
+    return keys
+    
+  except DeadlineExceededError:
+    keys.extend(db.put(to_put))
+    deferred.defer(_put,models[last_index+1:],_countdown=10)
+    return keys
+  
+  except CapabilityDisabledError:
+    if not countdown:
+      countdown = 30
+    else:
+      countdown *= 2
+    deferred.defer(_put,models,countdown,_countdown=countdown)
+      
   
 class pdb(object):
   '''Wrapper class for google.appengine.ext.db with seamless cache support'''
@@ -203,7 +234,6 @@ class pdb(object):
           _local_expiration = LOCAL_EXPIRATION,
           _memcache_expiration = MEMCACHE_EXPIRATION,
           _result_type=LIST,
-          _key_check=True,
           **kwds):
     """Fetch the specific Model instance with the given keys from 
     given storage layers in given format. 
@@ -221,8 +251,6 @@ class pdb(object):
       _memcache_expiration: Time for memcache expiration in seconds
                               Has no effect if _memcache_refresh = False
       _result_type: format of the result 
-      _key_check: Used for forcing custom keys to override default
-                        behaviour, You'll probably break things if you change this
       
       Inherited:
         keys: Key within datastore entity collection to find; or string key;
@@ -249,10 +277,7 @@ class pdb(object):
     _storage = _to_list(_storage)
     _validate_storage(_storage)
     
-    if _key_check:
-      keys = map(_key_str, _to_list(keys))
-    else:
-      keys = _to_list(keys)
+    keys = _to_list(keys)
     old_keys = keys
     local_not_found = []
     memcache_not_found = []
@@ -349,7 +374,7 @@ class pdb(object):
       _to_dict(models)
     except db.NotSavedError:
       if DATASTORE in _storage:
-        keys = db.put(models)
+        keys = _put(models)
         models = db.get(keys)
         _storage.remove(DATASTORE)
         if len(_storage):
@@ -358,7 +383,7 @@ class pdb(object):
         raise IdentifierNotFoundError() 
     
     if DATASTORE in _storage:
-      keys = db.put(models)
+      keys = _put(models)
       
     if LOCAL in _storage:
       keys = _cachepy_put(models, _local_expiration)
@@ -769,22 +794,17 @@ class pdb(object):
       if offset != 0:
         self._concat_keyname('__offset:'+str(offset))
 
-      result = pdb.get(self.key_name,
-                            _storage=_cache,
-                            _memcache_refresh = False,
-                            _local_cache_refresh = local_flag,
-                            _local_expiration = _local_expiration,
-                            _key_check=False)
+      result = _memcache_get(self.key_name)
       
-      if result is not None:
-        return result
-      else:
-        result = self.query.fetch(limit,offset)
-        if local_flag:
-          cachepy.set(self.key_name,result,_local_expiration)
+      if result is None:
+        result = self.query.fetch(limit,offset,**kwds)
         if memcache_flag:
           memcache.set(self.key_name,_serialize(result),_memcache_expiration)
-        return self.query.fetch(limit,offset,**kwds)
+      
+      if local_flag:
+        cachepy.set(self.key_name,result,_local_expiration)
+      
+      return result
         
 class time_util(object):
   '''This is a utility class for using update periods for cache invalidation
@@ -875,9 +895,6 @@ class _ReferenceCacheIndex(pdb.Model):
     entity.put(_storage=MEMCACHE,
                _memcache_expiration = _memcache_expiration)    
     return entity
-
-
-
 
 class ResultTypeError(Exception):
   def __init__(self,type):

@@ -95,18 +95,16 @@
 		<ul>
 			<li>Tweets</li>
 			<li>Product</li>
-			<li>Price</li>
 		</ul>
 		</div> <!-- #columns -->
 		
 		<div id="container" class="clickable clearfix">
 		{% for item in products %}
 		<div class="element gradient roundrect {{item.product_group.replace(' ','')}}">
-		  <img class="image" src="{{item.image_small}}" width="60" height="60"/>
+		  <img class="image" src="{{item.image_small}}" width="75" height="75"/>
 		  <p class="title">{{item.title}}</p>
 		  <a class="url" href="{{ item.url}}/{{ assoc_id}}"> </a>
 		  <p class="tweets">{{ item.count}}</p>
-		  <p class="price">{% if item.price is none %}N/A{% else %}{{ item.price}}{% endif %}</p>
 		</div>
 		{% endfor %} 
 
