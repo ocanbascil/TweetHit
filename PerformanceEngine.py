@@ -366,7 +366,7 @@ class pdb(object):
     '''
 
     keys = [] 
-    models = _to_list(models)   
+    models = [model for model in _to_list(models) if model is not None]
     _storage = _to_list(_storage)
     _validate_storage(_storage)
     
