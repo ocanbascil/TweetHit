@@ -38,12 +38,9 @@ class UrlBucketWorker(helipad.Handler):
     
     cached_urls = Url.get_by_key_name([payload.url for payload in payloads],
                                       _storage = [LOCAL,MEMCACHE],
-                                      _local_cache_refresh=True,
                                       _result_type = NAME_DICT)
     
     user_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
-                                        _local_cache_refresh=True,
-                                        _memcache_refresh=True,
                                         _local_expiration=time_util.minute_expiration(minutes=10)).users
                                         
     fetch_targets = [] #Urls that are not in lookup list
@@ -83,7 +80,6 @@ class UrlFetchWorker(helipad.Handler):
       
     fetch_targets = Payload.deserialize(self.request.get('payload'))
     product_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
-                                    _local_cache_refresh=True,
                                     _local_expiration=time_util.minute_expiration(minutes=10)).products 
     
     rpcs = []
