@@ -284,7 +284,6 @@ class Url(pdb.Model):
   If final url is a valid Amazon Product page then the url is set as valid
   key_name = short_url
   '''
-  add_date = db.DateProperty(auto_now_add = True)
   final_url = db.LinkProperty(indexed=False)
   user_id = db.StringProperty(indexed = False) #Used for creating counter payloads in bucket worker
   is_valid = db.BooleanProperty(default = False) #Has a final url that has been fetched successfully

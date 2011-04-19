@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from google.appengine.api import urlfetch
+from google.appengine.api import apiproxy_stub_map
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.ext.db import BadValueError
 
@@ -79,8 +80,38 @@ class AmazonProductFetcher(object):
     product_renderer.image_large = image_large
     
     return product_renderer    
-         
+  
 class UrlFetcher(object):
+  
+  @classmethod
+  def fetch_urls(cls,url_list):
+    rpcs = []
+    for url in url_list:
+      rpc = urlfetch.create_rpc(deadline=5.0)
+      urlfetch.make_fetch_call(rpc, url,method = urlfetch.HEAD)
+      rpcs.append(rpc)
+      
+    result = {}
+    while len(rpcs) > 0:
+      rpc = apiproxy_stub_map.UserRPC.wait_any(rpcs)
+      rpcs.remove(rpc)
+      request_url = rpc.request.url()
+      try:
+        final_url = rpc.get_result().final_url
+      except AttributeError:
+        final_url = request_url
+      except DownloadError:
+        final_url  = None
+      except UnicodeDecodeError: #Funky url with very evil characters
+        final_url = unicode(rpc.get_result().final_url,'utf-8')
+        
+      result[request_url] = final_url
+    
+    return result
+
+    
+         
+class UrlFetcher2(object):
   def prepare_urlfetch_rpc(self,url_model):
     self.rpc = urlfetch.create_rpc(callback=self.process_result,deadline=5.0)
     self.url_model = url_model

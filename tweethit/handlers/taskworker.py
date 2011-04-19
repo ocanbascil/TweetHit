@@ -78,50 +78,42 @@ class UrlFetchWorker(helipad.Handler):
   If anyone reads this, help me prettify this procedure'''
   def post(self):
       
-    fetch_targets = Payload.deserialize(self.request.get('payload'))
+    payloads = Payload.deserialize(self.request.get('payload'))
     product_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
                                     _local_expiration=time_util.minute_expiration(minutes=10)).products 
     
-    rpcs = []
-    result_urls = []
+    fetch_targets = list(set([payload.url for payload in payloads]))
+    result_dict = UrlFetcher.fetch_urls(fetch_targets)
+    urls = []
     counter_targets = []
     
-    for target in fetch_targets:
-      fetcher = UrlFetcher()
-      rpcs.append(fetcher.prepare_urlfetch_rpc(Url(key_name = target.url,user_id = target.user_id)))
-    
-    for item in rpcs:
-      rpc = item[0]
-      try:
-        rpc.wait()
-        url = item[1]
-        result_urls.append(url)
-      except DeadlineExceededError:
-        logging.critical('DeadlineExceededError for url: %s' %rpc.request.url())
-                 
-    for url in result_urls:
-      if not url.is_valid:
-        continue #No action for invalid urls
+    for payload in payloads:
+      request_url = payload.url
+      final_url = result_dict[request_url]
+      user_id = payload.user_id
       
-      try:
-        product_url = AmazonURLParser.product_url(url.final_url)
-        user_id = url.user_id
+      urls.append(Url(key_name=request_url,
+                          final_url=final_url,
+                          user_id = user_id))
         
-        if product_url in product_ban_list:
-            logging.info('Mention creation prevented for banned product url: %s' %product_url)
-            continue #no action for banned product
+    for url in urls:
+      if url.final_url is not None:
+        try:
+          product_url = AmazonURLParser.product_url(url.final_url)
+          
+          if product_url in product_ban_list:
+              logging.info('Mention creation prevented for banned product url: %s' %product_url)
+              continue #no action for banned product
+          
+          url.is_product = True #No exceptions for product_url => valid product reference
+          counter_targets.append(Payload(product_url,url.user_id))
+        except ParserException,e:
+          pass 
         
-        url.is_product = True #No exceptions for product_url => valid product reference
-        
-        counter_targets.append(Payload(product_url,user_id))
-      except ParserException,e:
-        pass
-                       
-    pdb.put(result_urls, _storage = [LOCAL,MEMCACHE]) #Urls are stored in cache only
+    pdb.put(urls, _storage = [LOCAL,MEMCACHE]) #Urls are stored in cache only
     
     if len(counter_targets):
-      counter_payload = Payload.serialize(counter_targets)
-      enqueue_counter(counter_payload)
+      enqueue_counter(Payload.serialize(counter_targets))
       
 class CounterWorker(helipad.Handler):
   '''Updates counter entities for twitter_user and product models
