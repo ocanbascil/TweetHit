@@ -82,7 +82,7 @@ class AmazonProductFetcher(object):
          
 class UrlFetcher(object):
   def prepare_urlfetch_rpc(self,url_model):
-    self.rpc = urlfetch.create_rpc(callback=self.process_result)
+    self.rpc = urlfetch.create_rpc(callback=self.process_result,deadline=5.0)
     self.url_model = url_model
     urlfetch.make_fetch_call(self.rpc, self.url_model.key().name(),method = urlfetch.HEAD)
     return self.rpc,self.url_model

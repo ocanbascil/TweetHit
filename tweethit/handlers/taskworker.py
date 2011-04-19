@@ -90,17 +90,15 @@ class UrlFetchWorker(helipad.Handler):
       fetcher = UrlFetcher()
       rpcs.append(fetcher.prepare_urlfetch_rpc(Url(key_name = target.url,user_id = target.user_id)))
     
-    try:
-      for item in rpcs:
-        rpc = item[0]
+    for item in rpcs:
+      rpc = item[0]
+      try:
         rpc.wait()
         url = item[1]
         result_urls.append(url)
-    except DeadlineExceededError:
-      for url in result_urls:
-        fetch_targets.remove(url.key().name())
-      logging.error('Problem retrieveing urls: %s' %fetch_targets)
-                
+      except DeadlineExceededError:
+        logging.critical('DeadlineExceededError for url: %s' %rpc.request.url())
+                 
     for url in result_urls:
       if not url.is_valid:
         continue #No action for invalid urls
