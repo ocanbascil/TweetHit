@@ -382,7 +382,10 @@ class pdb(object):
       
     if len(keys) > 1:
       return keys
-    return keys[0]
+    elif len(keys):
+      return keys[0]
+    else:
+      return None
 
 
   @classmethod
