@@ -5,8 +5,8 @@ v1.0
 https://github.com/ocanbascil/Performance-AppEngine
 ==============================
     PerformanceEngine is a simple wrapper module that enables layered 
-    data model storage in Google Application Engine. Its main goal is to 
-    increase both application and developer performance.
+    data model storage and cached queries in Google Application Engine. 
+    Its main goal is to increase both application and developer performance.
     
     It can store/retrieve models using local cache, memcache or datastore.
     
@@ -85,11 +85,6 @@ def _key_str(param):
 def _id_or_name(_key_str):
   key = db.Key(_key_str)
   return key.name() or str(key.id())
-
-def _diff(list1,list2):
-  '''Finds the difference of keys between 2 lists
-  Used for layered model retrieval'''
-  return list(set(list1)-set(list2))
 
 def _to_list(param): 
     if not isinstance(param,list):
@@ -385,7 +380,9 @@ class pdb(object):
     if MEMCACHE in _storage:
       keys = _memcache_put(models,_memcache_expiration)
       
-    return keys
+    if len(keys) > 1:
+      return keys
+    return keys[0]
 
 
   @classmethod
@@ -458,7 +455,7 @@ class pdb(object):
         See pdb.get
         
       Raises:
-        KindError if any of the retreived objects are not instances of the
+        KindError if any of the retrieved objects are not instances of the
           type associated with call to 'get'.
       '''
       models = pdb.get(keys,**kwds)
@@ -469,10 +466,14 @@ class pdb(object):
         temp = dict.values()
       elif isinstance(temp, db.Model):
         temp = [temp]
+        
+      if temp is None:
+        return None
+    
       for instance in temp:
-        if not(instance is None or isinstance(instance, cls)):
+        if not isinstance(instance, cls):
           raise db.KindError('Kind %r is not a subclass of kind %r' %
-                          (instance.kind(), cls.kind())) 
+                          (instance, cls)) 
       return models
     
     def delete(self,_storage = ALL_LEVELS):
@@ -526,7 +527,7 @@ class pdb(object):
       return pdb.get(key_strings,**kwds)
     
     @classmethod
-    def get_or_insert(cls,key_name,**kwds):
+    def get_or_insert(cls,key_name,parent=None,**kwds):
       '''Retrieve or create an instance of Model class using the given storage layers.
       
       If entity is found, it is returned and also cache layers are refreshed if the result
@@ -561,7 +562,7 @@ class pdb(object):
         kwds.pop('_result_type') #Use default result for pdb.get
       except KeyError:
         pass
-      entity = cls.get_by_key_name(key_name,parent=kwds.get('parent'),**kwds)
+      entity = cls.get_by_key_name(key_name,parent=parent,**kwds)
       if entity is None:
         return db.run_in_transaction(txn)
       else:
