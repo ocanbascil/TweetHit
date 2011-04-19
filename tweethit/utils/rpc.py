@@ -2,17 +2,10 @@
 from google.appengine.api import urlfetch
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api.urlfetch import DownloadError
-from google.appengine.ext.db import BadValueError
 
 import amazonproduct
 import time
 from config import DEBUG_MODE
-
-# DeadlineExceededError can live in two different places 
-try: 
-  from google.appengine.runtime import DeadlineExceededError #Deploy
-except ImportError: 
-  from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
 
 import logging
 from secret import *
@@ -27,10 +20,9 @@ class AmazonProductFetcher(object):
   """
   Fetch product information using Amazon Product API
   Save the results into a ProductDetail instance
-  3 Fetches are Made:
+  2 Fetches are Made:
   1- Product details = title, product_group
-  2- Prices details = lowest price of new items
-  3- Image details = urls for small, medium, large images
+  2- Image details = urls for small, medium, large images
   
   This service will be called by product renderer taskworker
   """
