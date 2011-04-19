@@ -233,38 +233,38 @@ class ProductRendererInfoFetcher(helipad.Handler):
         renderer.put(_storage=[MEMCACHE,DATASTORE])
       
 class CleanupWorker(helipad.Handler):
-    def post(self):
-        model_kind = self.request.get('model_kind')
-        frequency = self.request.get('frequency')
-        date = str_to_date(self.request.get('date_string'))
-        store_key_name = self.request.get('store_key_name')
-        
-        logging.info('Cleanupworker model kind: %s frequency: \
-        %s store: %s' %(model_kind,frequency,store_key_name))
-        
-        recursion_flag = False
-        
-        if model_kind == 'ProductRenderer':
-          store_key = Key.from_path('Store',store_key_name)
-          query = get_renderer_query_for_frequency(frequency, date, store_key)
-          keys = query.fetch(200, TEMPLATE_PRODUCT_COUNT)
-        elif model_kind == 'ProductCounter':
-          store_key = Key.from_path('Store',store_key_name)
-          query = get_counter_query_for_frequency(frequency, date, store_key)
-          keys = query.fetch(200)
-        elif model_kind == 'UserCounter':
-          query = USER_COUNTER_CLEANUP_TARGETS
-          keys = query.fetch(200)
-        else:
-          logging.error('No type found for CleanupWorker :%s' %model_kind)
- 
-        if len(keys):
-          recursion_flag = True
-          pdb.delete(keys)
-        
-        if recursion_flag:
-          logging.info('Enqueing cleanup for model %s' %model_kind)
-          enqueue_cleanup(model_kind,frequency,str(date),store_key_name)
+  def post(self):
+    model_kind = self.request.get('model_kind')
+    frequency = self.request.get('frequency')
+    date = str_to_date(self.request.get('date_string'))
+    store_key_name = self.request.get('store_key_name')
+    
+    logging.info('Cleanupworker model kind: %s frequency: \
+    %s store: %s' %(model_kind,frequency,store_key_name))
+    
+    recursion_flag = False
+    
+    if model_kind == 'ProductRenderer':
+      store_key = Key.from_path('Store',store_key_name)
+      query = get_renderer_query_for_frequency(frequency, date, store_key)
+      keys = query.fetch(200, TEMPLATE_PRODUCT_COUNT)
+    elif model_kind == 'ProductCounter':
+      store_key = Key.from_path('Store',store_key_name)
+      query = get_counter_query_for_frequency(frequency, date, store_key)
+      keys = query.fetch(200)
+    elif model_kind == 'UserCounter':
+      query = USER_COUNTER_CLEANUP_TARGETS
+      keys = query.fetch(200)
+    else:
+      logging.error('No type found for CleanupWorker :%s' %model_kind)
+    
+    if len(keys):
+      recursion_flag = True
+      pdb.delete(keys)
+    
+    if recursion_flag:
+      logging.info('Enqueing cleanup for model %s' %model_kind)
+      enqueue_cleanup(model_kind,frequency,str(date),store_key_name)
 
 main, application = helipad.app({
     '/taskworker/bucket/': UrlBucketWorker,
