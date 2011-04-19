@@ -2,11 +2,6 @@ import helipad
 import logging
 
 from google.appengine.ext.db import Key
-# DeadlineExceededError can live in two different places 
-try: 
-  from google.appengine.runtime import DeadlineExceededError #Deploy
-except ImportError: 
-  from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
 
 from PerformanceEngine import LOCAL,MEMCACHE,DATASTORE, \
 NAME_DICT,pdb,time_util
@@ -72,10 +67,9 @@ class UrlFetchWorker(helipad.Handler):
   '''Fetches all unprocessed URL headers to see if they 
   are directed to a Amazon Product Page
   
-  Then creates mentions for all valid amazon products 
-  and sends them to counter worker
-  
-  If anyone reads this, help me prettify this procedure'''
+  If it finds any product urls, it enqueues counter payloads
+  for processing
+  '''
   def post(self):
       
     payloads = Payload.deserialize(self.request.get('payload'))
@@ -107,7 +101,7 @@ class UrlFetchWorker(helipad.Handler):
           
           url.is_product = True #No exceptions for product_url => valid product reference
           counter_targets.append(Payload(product_url,url.user_id))
-        except ParserException,e:
+        except ParserException:
           pass 
         
     pdb.put(urls, _storage = [LOCAL,MEMCACHE]) #Urls are stored in cache only
