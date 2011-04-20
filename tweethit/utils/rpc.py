@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from google.appengine.api import urlfetch
 from google.appengine.api import apiproxy_stub_map
-from google.appengine.api.urlfetch import DownloadError
+from google.appengine.api.urlfetch import DownloadError,InvalidURLError
 
 import amazonproduct
 import time
@@ -98,11 +98,15 @@ class UrlFetcher(object):
         final_url = rpc.get_result().final_url
       except AttributeError:
         final_url = request_url
-      except (DeadlineExceededError,DownloadError):
+      except DeadlineExceededError:
+        logging.error('Handling DeadlineExceededError for url: %s' %request_url)
         final_url  = None
+      except (DownloadError,InvalidURLError):
+        final_url  = None        
       except UnicodeDecodeError: #Funky url with very evil characters
         final_url = unicode(rpc.get_result().final_url,'utf-8')
         
       result[request_url] = final_url
     
+    logging.info('Returning results: %s' %result)
     return result
