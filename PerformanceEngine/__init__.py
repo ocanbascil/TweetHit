@@ -27,8 +27,7 @@ from google.appengine.ext import db
 from google.appengine.api import datastore
 from google.appengine.ext import deferred
 from google.appengine.datastore import entity_pb
-from google.appengine.runtime import DeadlineExceededError
-from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
+from google.appengine.runtime import apiproxy_errors
 
 import cachepy
 import logging
@@ -201,12 +200,12 @@ def _put(models,countdown=0):
     keys.extend(db.put(to_put))
     return keys
     
-  except DeadlineExceededError:
+  except apiproxy_errors.DeadlineExceededError:
     keys.extend(db.put(to_put))
     deferred.defer(_put,models[last_index+1:],_countdown=10)
     return keys
   
-  except CapabilityDisabledError:
+  except apiproxy_errors.CapabilityDisabledError:
     if not countdown:
       countdown = 30
     else:
@@ -816,7 +815,10 @@ class pdb(object):
       
     def get(self,**kwds):
       '''Return first or offset+1 nth element in query result'''
-      return self.fetch(1,**kwds)[0]
+      try:
+        return self.fetch(1,**kwds)[0]
+      except IndexError:
+        return None
       
     def fetch(self,limit,offset=0,
               _cache=[],
@@ -917,20 +919,30 @@ class time_util(object):
     return date(now.year,now.month,now.day)
   
   @classmethod
-  def minute_expiration(cls,minutes=10,minute_offset=0):
+  def minute_expiration(cls,minutes=10,
+                                        minute_offset=0,
+                                        _test_datetime=None):
     '''Returns seconds left for the next minute period
     Starting at minute_offset'''
-    now = cls.now()
+    if _test_datetime:
+      now = _test_datetime
+    else:
+      now = cls.now()
     second = now.second
     minute = now.minute
     elapsed = (minute % minutes)*60+second
     return (minutes+minute_offset)*60-elapsed
   
   @classmethod
-  def hour_expiration(cls,hours=1,hour_offset=0,minute_offset=0):
+  def hour_expiration(cls,hours=1,hour_offset=0,
+                                    minute_offset=0,
+                                    _test_datetime=None):
     '''Returns seconds left for the next hour period
     Starting at hour_offset:minute_offset'''
-    now = cls.now()
+    if _test_datetime:
+      now = _test_datetime
+    else:
+      now = cls.now()
     second = now.second
     minute = now.minute
     hour = now.hour
@@ -938,10 +950,16 @@ class time_util(object):
     return (hours+hour_offset)*3600+minute_offset*60-elapsed
     
   @classmethod
-  def day_expiration(cls,days=1,day_offset=0,hour_offset=0,minute_offset=0):
+  def day_expiration(cls,days=1,day_offset=0,
+                                   hour_offset=0,
+                                   minute_offset=0,
+                                   _test_datetime=None):
     '''Returns seconds left for the next day period
     Starting at day_offset:hour_offset:minute_offset'''
-    now = cls.now()
+    if _test_datetime:
+      now = _test_datetime
+    else:
+      now = cls.now()
     second = now.second
     minute = now.minute
     hour = now.hour
