@@ -474,7 +474,7 @@ class pdb(object):
         return None
     
       for instance in temp:
-        if not isinstance(instance, cls):
+        if not isinstance(instance, cls) and instance is not None:
           raise db.KindError('Kind %r is not a subclass of kind %r' %
                           (instance, cls)) 
       return models
@@ -816,7 +816,7 @@ class pdb(object):
       
     def get(self,**kwds):
       '''Return first or offset+1 nth element in query result'''
-      return self.fetch(1,**kwds)
+      return self.fetch(1,**kwds)[0]
       
     def fetch(self,limit,offset=0,
               _cache=[],
