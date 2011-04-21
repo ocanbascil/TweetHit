@@ -71,7 +71,7 @@ class UrlFetchWorker(helipad.Handler):
   for processing
   '''
   def post(self):
-      
+    logging.info('UrlFetchWorker started')
     payloads = Payload.deserialize(self.request.get('payload'))
     product_ban_list = Banlist.retrieve(_storage=[LOCAL,MEMCACHE,DATASTORE],
                                     _local_expiration=time_util.minute_expiration(minutes=10)).products 
@@ -103,7 +103,8 @@ class UrlFetchWorker(helipad.Handler):
           counter_targets.append(Payload(product_url,url.user_id))
         except ParserException:
           pass 
-        
+    
+    logging.info('UrlFetchWorker finished, counter targets: %s' %counter_targets)   
     pdb.put(urls, _storage = [LOCAL,MEMCACHE]) #Urls are stored in cache only
     
     if len(counter_targets):

@@ -7,11 +7,8 @@ import amazonproduct
 import time
 from config import DEBUG_MODE
 
-# DeadlineExceededError can live in two different places 
-try: 
-  from google.appengine.runtime import DeadlineExceededError #Deploy
-except ImportError: 
-  from google.appengine.runtime.apiproxy_errors import DeadlineExceededError #Debug
+
+from google.appengine.runtime import apiproxy_errors
 
 import logging
 from secret import *
@@ -98,7 +95,7 @@ class UrlFetcher(object):
         final_url = rpc.get_result().final_url
       except AttributeError:
         final_url = request_url
-      except DeadlineExceededError:
+      except apiproxy_errors.DeadlineExceededError:
         logging.error('Handling DeadlineExceededError for url: %s' %request_url)
         final_url  = None
       except (DownloadError,InvalidURLError):
