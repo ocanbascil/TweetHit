@@ -95,10 +95,7 @@ class UrlFetcher(object):
         final_url = rpc.get_result().final_url
       except AttributeError:
         final_url = request_url
-      except apiproxy_errors.DeadlineExceededError:
-        logging.error('Handling DeadlineExceededError for url: %s' %request_url)
-        final_url  = None
-      except (DownloadError,InvalidURLError):
+      except (DownloadError,InvalidURLError,apiproxy_errors.DeadlineExceededError):
         final_url  = None        
       except UnicodeDecodeError: #Funky url with very evil characters
         final_url = unicode(rpc.get_result().final_url,'utf-8')
